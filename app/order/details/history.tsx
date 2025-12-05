@@ -564,8 +564,8 @@ const handleViewPdf = async () => {
                           <div className="flex items-center flex-1 min-w-0">
                           <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2 sm:mr-3 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm sm:text-base truncate">Policy Schedule</p>
-                            <p className="text-xs text-gray-500">Detailed policy terms and conditions</p>
+                            <p className="font-medium text-sm sm:text-base truncate">Document Schedule</p>
+                            <p className="text-xs text-gray-500">Detailed document terms and conditions</p>
                           </div>
                         </div>
                         <Button size="sm" variant="ghost" className="text-blue-600 ml-2 flex-shrink-0">

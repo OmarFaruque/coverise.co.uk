@@ -30,7 +30,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { QuoteFormulaSettings } from "./quote-formula-settings"
-import { CertificateTemplateTab } from "./certificate-template-tab"
+import { DocumentTemplatesTab } from "./document-templates-tab"
 
 function EmailTemplatesTab() {
   const [templates, setTemplates] = useState({
@@ -882,6 +882,83 @@ export function SettingsSection() {
         </div>
       </div>`,
     },
+    statementOfFactTemplate: {
+      classOfUse: `Use for social domestic and pleasure purposes and use in person by the Policyholder in connection with their business or profession EXCLUDING use for hire or reward, racing, pacemaking, speed testing, commercial travelling or use for any purpose in connection with the motor trade.`,
+      proposerDeclaration: `
+    <div style="font-size:15pt; font-weight:bold">PROPOSER DECLARATION</div>
+    <table class="tb1" style="padding-top:10px;"><tr><td class="td2">I declare that I:</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Have no more than 2 motoring convictions and/or 6 penalty points in the last 3 years, and have no prosecution or police enquiry pending, other than a No Covernote conviction resulting from the current seizure of the vehicle.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Have NOT been disqualified from driving in the last 5 years.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Have no criminal convictions.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Have no more than 1 fault claim within the last 3 years (a pending or non-recoverable claim is considered a fault claims).</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Have <span class="bd ud">NOT</span> had a policy of covernote voided or cancelled by a covernote company</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Am a permanent UK resident for at least 36 month</td></tr></table>
+    <table class="tb1"><tr><td class="td2">I declare that the vehicle:</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Will only be used for social, domestic and pleasure purposes.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Is owned by me and I can prove legal title to the vehicle.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Will NOT be used for commuting, business use, hire or reward, racing, pace-making, speed testing, commercial travelling or use for any purpose in relation to the motor trade.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Will not be used to carry hazardous goods or be driven at a hazardous location.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Has not been modified and has no more than 8 seats in total and is right-hand drive only.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Is registered in Great Britain, Northern Ireland or the Isle of Man.</td></tr></table>
+    <table class="tb2"><tr><td class="td1"></td><td class="td3">Will be in the UK at the start of the policy and will not be exported from the UK during the duration of the policy.</td></tr></table>
+    <table class="tb1"><tr><td class="td2">I am aware that this covernote cannot be used for any vehicle not owned by me including Hire or Loan Vehicles (i.e. Vehicle Rentals, Vehicle Salvage/Recovery Agents, Credit Hire Vehicles/Companies and Accident Management Companies).</td></tr></table>
+    <table class="tb1"><tr><td class="td2">I agree that in the event of a claim I will provide the V5 registration document, a current MOT certificate (where one is required by law to be issued) and a copy of my driving licence</td></tr></table>
+  `,
+      importantNotice: `
+    <div style="font-size:12pt; font-weight:bold">IMPORTANT NOTICE</div>
+    <table class="tb3" style="padding-top:5px;"><tr><td class="td1">information relating to your policy will be added to the Motor Covernote Database ('M information relating to your policy will be added to the added to the Motor Covernote Database ('M information relating to your policy will be added to the MID') managed by the Motor Covernote Bureau ('MIB'). MID and the data stored on it may be used by certain statutory and/or authorised bodies including the Police, the DVLA, the DVLANI, the Covernote Fraud Bureau and other bodies permitted by law for purposes not limited to but including: <br>•Electronic Licensing. <br>•Continuous Covernote Enforcement. <br>Law enforcement (prevention, detection, apprehension and or prosecution of offenders) <br>•The provision of government services and or other services aimed at reducing the level and incidence of uninsured driving. <br>If you are involved in a road traffic accident (either in the UK, EEA or certain other territories), covernotes and or the MIB may search the MID to obtain relevant information. Persons (including his or her appointed representatives) pursuing a claim in respect of a road traffic accident (including citizens of other countries) may also obtain information which is held on the MID. It is vital that the MID holds your correct registration number. If it is incorrectly shown on MID you are at risk of having your vehicle seized by the Police. Covernote Act 2015 Governs covernote contracts, including temporary documents like cover notes. It does not restrict the creation of drafts or templates — the key legal obligation is that: <br/> "The covernoter must be provided with fair and accurate presentation of the risk." <br>This means <br/>Users generating a draft cover note for reference or temporary use are not in breach of the Act unless they lie or misrepresent the covernote situation. Cuverly is not a regulated covernote provider and is not authorised by the Financial Conduct Authority (FCA). The docu... 
+    </td></tr></table>
+  `,
+      noSignNotice: `
+    <table style="width:100%; margin-top: 10px;"><tr><td>
+      <div style="background-color:#000; color:#FFF; font-size:10pt; text-align:center; font-weight:bold; padding: 5px;">IMPORTANT<br>There is no need to sign this document, as by agreeing to the declaration during the quotation process you have confirmed that you have read and agree to the motor covernote limited / Proposer's Declaration</div>
+    </td></tr></table>
+  `,
+    },
+    policyScheduleTemplate: {
+      endorsementsApplicable: `<table class="tb1">
+        <tr><td class="bd tdl">ENDORSEMENTS APPLICABLE (Full wordings shown within ENDORSEMENTS)</td></tr>
+        <tr><td class="tdl">FCC - FULLY COMPREHENSIVE</td></tr>
+      </table>`,
+      endorsements: `<table class="tb1">
+        <tr><td class="bd tdl">ENDORSEMENTS - only apply if noted in the ENDORSEMENTS APPLICABLE above</td></tr>
+      </table>
+      <div style="padding:1px 0;"></div>
+      <table class="tb1">
+        <tr><td class="bd tdl">FCC - FULLY COMPREHENSIVE COVER</td></tr>
+        <tr><td>This Short Term Docs is for Fully Comprehensive cover. There is comprehensive cover for any damage to your vehicle.</td></tr>
+      </table>
+      <div style="padding:1px 0;"></div>
+      <div style="padding:1px 0;"></div>
+      <table class="tb1">
+        <tr><td class="bd tdl">017 - USE IN THE REPUBLIC OF IRELAND</td></tr>
+        <tr><td>The Territorial Limits mentioned in your docs are amended to allow your vehicle to be used in the Republic of Ireland with indemnity as if it were in the United Kingdom.</td></tr>
+      </table>
+      <div style="padding:1px 0;"></div>
+      <table class="tb1">
+        <tr><td class="bd tdl">065 - FOREIGN USE EXTENSION</td></tr>
+        <tr><td>We will insure you for the cover shown in your schedule while your motor vehicle is being used within:</td></tr>
+        <tr><td>-any country in the European Union (EU).</td></tr>
+        <tr><td>-Andorra, Iceland, Liechtenstein, Norway and Switzerland.</td></tr>
+        <tr><td>Full details of your Foreign Use terms and conditions are stated within the Foreign Use section of your docs. This endorsement only applies if we have agreed and you have paid an additional premium.</td></tr>
+      </table>`,
+      importantInformation: `<table class="tb1">
+        <tr><td class="bd">Important Information</td></tr>
+      </table>
+      <div style="padding:1px 0;"></div>
+      <table class="tb1">
+        <tr><td><span class="bd tdl"><strong>CONTINUOUS covernote ENFORCEMENT and the MOTOR covernote DATABASE </strong> Information relating to your policy will be added to the Motor covernote Database ('MID') managed by the Motor covernote Bureau ('MIB'). MID and the data stored on it may be used by certain statutory and/or authorised bodies including the Police, the DVLA, the DVLANI, the covernote Fraud Bureau and other bodies permitted by law for purposes including:</td></tr>
+        <tr><td><ul><li>Electronic Licensing</li><li>Continuous docs Enforcement</li><li>Law enforcement (prevention, detection, apprehension and or prosecution of offenders)</li><li>The provision of government services and or other services aimed at reducing the level and incidence of uninsured driving.</li></ul></td></tr>
+      </table>
+      <div style="padding:1px 0;"></div>
+      <table class="tb1">
+        <tr><td>If you are involved in a road traffic accident (either in the UK, EEA or certain other territories), insurers and or the MIB may search the MID to obtain relevant information.</td></tr>
+      </table>
+      <div style="padding:1px 0;"></div>
+      <table class="tb1">
+        <tr><td class="tdl">Persons (including his or her appointed representatives) pursuing a claim in respect of a road traffic accident (including citizens of other countries) may also obtain information which is held on the MID. It is vital that the MID holds your correct registration number. If it is incorrectly shown on MID you are at risk of having your vehicle seized by the Police.</td></tr>
+      </table>`,
+    },
   })
 
   const [loading, setLoading] = useState(true)
@@ -920,6 +997,18 @@ export function SettingsSection() {
           if (result.settings.certificateTemplate && !result.settings.certificateTemplate.page1_footer) {
             newSettings.certificateTemplate.page1_footer = prevSettings.certificateTemplate.page1_footer;
           }
+          if (result.settings.statementOfFactTemplate) {
+            newSettings.statementOfFactTemplate = {
+              ...prevSettings.statementOfFactTemplate,
+              ...result.settings.statementOfFactTemplate,
+            };
+          }
+          if (result.settings.policyScheduleTemplate) {
+            newSettings.policyScheduleTemplate = {
+              ...prevSettings.policyScheduleTemplate,
+              ...result.settings.policyScheduleTemplate,
+            };
+          }
           return newSettings;
         });
       } else {
@@ -933,12 +1022,12 @@ export function SettingsSection() {
     }
   }
 
-  const updateSetting = (section: string, key: string, value: any) => {
+  const updateSetting = (section: string, part: string, value: any) => {
     setSettings((prev: any) => ({
       ...prev,
       [section]: {
         ...prev[section],
-        [key]: value,
+        [part]: value,
       },
     }))
     setHasChanges(true)
@@ -1228,13 +1317,13 @@ export function SettingsSection() {
             <Mail className="h-4 w-4" />
             <span className="hidden sm:inline">Email</span>
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
+          <TabsTrigger value="email_templates" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Templates</span>
+            <span className="hidden sm:inline">Email Templates</span>
           </TabsTrigger>
-          <TabsTrigger value="certificate" className="flex items-center gap-2">
+          <TabsTrigger value="document_templates" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Certificate</span>
+            <span className="hidden sm:inline">Document Templates</span>
           </TabsTrigger>
           {/* <TabsTrigger value="vehicle" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -1967,12 +2056,12 @@ export function SettingsSection() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="templates" className="space-y-6">
+        <TabsContent value="email_templates" className="space-y-6">
           <EmailTemplatesTab />
         </TabsContent>
 
-        <TabsContent value="certificate" className="space-y-6">
-          <CertificateTemplateTab settings={settings} updateSetting={updateSetting} />
+        <TabsContent value="document_templates" className="space-y-6">
+          <DocumentTemplatesTab settings={settings} updateSetting={updateSetting} />
         </TabsContent>
 
         <TabsContent value="vehicle" className="space-y-6">

@@ -1,50 +1,50 @@
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { FileText } from "lucide-react"
 
-const availableVariables = [
-  "docNumber",
-  "registrationMark",
-  "descriptionOfVehicles",
-  "make",
-  "model",
-  "name",
-  "dob",
-  "license",
-  "effectiveDate",
-  "expiryDate",
-  "address",
-  "premium",
-  "excess",
-]
+export function CertificateTemplateTab({ settings, updateSetting }: { settings: any; updateSetting: any }) {
+  const template = settings.certificateTemplate || {}
 
-export function CertificateTemplateTab({ settings, updateSetting }) {
-  const handleContentChange = (page: "page1" | "page2" | "page1_footer", value: string) => {
-    updateSetting("certificateTemplate", page, value)
+  const handleTemplateChange = (part: string, value: string) => {
+    updateSetting("certificateTemplate", part, value)
   }
 
-  const insertVariable = (page: "page1" | "page2" | "page1_footer", variable: string) => {
-    const textarea = document.getElementById(`certificate-${page}-content`) as HTMLTextAreaElement
-    if (!textarea) return
+  const availableVariables = [
+    "docNumber",
+    "registrationMark",
+    "descriptionOfVehicles",
+    "make",
+    "model",
+    "name",
+    "dob",
+    "license",
+    "effectiveDate",
+    "expiryDate",
+    "address",
+    "premium",
+    "excess",
+  ]
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const currentContent = settings.certificateTemplate[page]
-    const newContent = currentContent.substring(0, start) + `{{${variable}}}` + currentContent.substring(end)
+  const insertVariable = (part: keyof typeof template, variable: string) => {
+    const currentContent = template[part] || ""
+    const textarea = document.getElementById(`cert-${part}`) as HTMLTextAreaElement
 
-    handleContentChange(page, newContent)
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const newContent = currentContent.substring(0, start) + `{{${variable}}}` + currentContent.substring(end)
+      handleTemplateChange(part, newContent)
 
-    // Focus and set cursor position after state update
-    setTimeout(() => {
-      textarea.focus()
-      const newCursorPos = start + variable.length + 4
-      textarea.selectionStart = newCursorPos
-      textarea.selectionEnd = newCursorPos
-    }, 0)
+      setTimeout(() => {
+        textarea.focus()
+        textarea.selectionStart = start + variable.length + 4
+        textarea.selectionEnd = start + variable.length + 4
+      }, 0)
+    }
   }
 
   return (
@@ -55,86 +55,64 @@ export function CertificateTemplateTab({ settings, updateSetting }) {
           Certificate Template
         </CardTitle>
         <CardDescription>
-          Edit the HTML content for the downloadable PDF certificate. Use HTML tags like &lt;b&gt; for bold and
-          &lt;div&gt; for structure.
+          Customize the content of the generated Certificate PDF. Use the available variables to dynamically
+          insert policy data.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
+          <Label htmlFor="cert-page1">Page 1 Content (HTML)</Label>
+          <Textarea
+            id="cert-page1"
+            value={template.page1 || ""}
+            onChange={(e) => handleTemplateChange("page1", e.target.value)}
+            rows={20}
+            className="font-mono text-sm"
+          />
+        </div>
+        <div>
+          <Label htmlFor="cert-page1_footer">Page 1 Footer (HTML)</Label>
+          <Textarea
+            id="cert-page1_footer"
+            value={template.page1_footer || ""}
+            onChange={(e) => handleTemplateChange("page1_footer", e.target.value)}
+            rows={10}
+            className="font-mono text-sm"
+          />
+        </div>
+        <div>
+          <Label htmlFor="cert-page2">Page 2 Content (HTML)</Label>
+          <Textarea
+            id="cert-page2"
+            value={template.page2 || ""}
+            onChange={(e) => handleTemplateChange("page2", e.target.value)}
+            rows={20}
+            className="font-mono text-sm"
+          />
+        </div>
+        <div>
           <Label>Available Variables</Label>
-          <div className="flex flex-wrap gap-2 mt-2 rounded-md border p-3 bg-gray-50">
+          <div className="flex flex-wrap gap-2 mt-2">
             {availableVariables.map((variable) => (
-              <Badge key={variable} variant="secondary" className="font-mono">
+              <Badge
+                key={variable}
+                variant="outline"
+                className="cursor-pointer hover:bg-blue-50"
+                onClick={() => {
+                  const activeElementId = document.activeElement?.id
+                  if (activeElementId && activeElementId.startsWith("cert-")) {
+                    const part = activeElementId.replace("cert-", "")
+                    insertVariable(part as keyof typeof template, variable)
+                  }
+                }}
+              >
                 {`{{${variable}}}`}
               </Badge>
             ))}
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Click a variable below to insert it into the active editor.
+            Click inside a text area, then click a variable to insert it at your cursor&apos;s position.
           </p>
-        </div>
-
-        <div className="space-y-4">
-          <Label htmlFor="certificate-page1-content" className="text-lg font-semibold">
-            Page 1 Content (HTML)
-          </Label>
-          <Textarea
-            id="certificate-page1-content"
-            value={settings.certificateTemplate.page1}
-            onChange={(e) => handleContentChange("page1", e.target.value)}
-            placeholder="Enter HTML for page 1..."
-            rows={15}
-            className="font-mono text-sm"
-          />
-          <div className="flex flex-wrap gap-2">
-            {availableVariables.map((variable) => (
-              <Badge key={variable} variant="outline" className="cursor-pointer" onClick={() => insertVariable("page1", variable)}>
-                {`{{${variable}}}`}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <Label htmlFor="certificate-page2-content" className="text-lg font-semibold">
-            Page 2 Content (HTML)
-          </Label>
-          <Textarea
-            id="certificate-page2-content"
-            value={settings.certificateTemplate.page2}
-            onChange={(e) => handleContentChange("page2", e.target.value)}
-            placeholder="Enter HTML for page 2..."
-            rows={15}
-            className="font-mono text-sm"
-          />
-          <div className="flex flex-wrap gap-2">
-            {availableVariables.map((variable) => (
-              <Badge key={variable} variant="outline" className="cursor-pointer" onClick={() => insertVariable("page2", variable)}>
-                {`{{${variable}}}`}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <Label htmlFor="certificate-page1-footer-content" className="text-lg font-semibold">
-            Page 1 Footer Content (HTML)
-          </Label>
-          <Textarea
-            id="certificate-page1-footer-content"
-            value={settings.certificateTemplate.page1_footer}
-            onChange={(e) => handleContentChange("page1_footer", e.target.value)}
-            placeholder="Enter HTML for page 1 footer..."
-            rows={15}
-            className="font-mono text-sm"
-          />
-          <div className="flex flex-wrap gap-2">
-            {availableVariables.map((variable) => (
-              <Badge key={variable} variant="outline" className="cursor-pointer" onClick={() => insertVariable("page1_footer", variable)}>
-                {`{{${variable}}}`}
-              </Badge>
-            ))}
-          </div>
         </div>
       </CardContent>
     </Card>

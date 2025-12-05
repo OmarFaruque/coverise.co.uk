@@ -42,20 +42,7 @@ function renderCertificateToHtml(policy: any, settings: any) {
   const premium = Number(policy.update_price ?? policy.cpw ?? 0).toFixed(2);
   const excess = "750.00";
 
-  // Attempt to read local logo from /public; fallback to absolute URL
-  let logoDataUri = "";
-  try {
-    const logoPath = path.join(process.cwd(), "public", "cert-logo.png");
-    if (fs.existsSync(logoPath)) {
-      const raw = fs.readFileSync(logoPath);
-      const mime = "image/png";
-      logoDataUri = `data:${mime};base64,${raw.toString("base64")}`;
-    }
-  } catch (err) {
-    console.error("Failed to read cert-logo.png:", err);
-  }
-  const logoUrlFallback = `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/cert-logo.png`;
-  const logoSrc = logoDataUri || logoUrlFallback;
+  const logoSrc = settings?.certificateTemplate?.logo || `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/cert-logo.png`;
 
   // template variables (match history.tsx variables)
   const template = settings?.certificateTemplate || null;

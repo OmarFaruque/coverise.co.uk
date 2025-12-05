@@ -138,6 +138,7 @@ const StripeApplePayButton = ({ quoteData, user, quote, onProcessingChange, allT
     const stripe = useStripe();
     const { toast } = useToast();
     const [paymentRequest, setPaymentRequest] = useState(null);
+    const [availablePaymentMethods, setAvailablePaymentMethods] = useState<any>(null);
 
     useEffect(() => {
         if (stripe) {
@@ -152,14 +153,19 @@ const StripeApplePayButton = ({ quoteData, user, quote, onProcessingChange, allT
                 requestPayerEmail: true,
             });
 
-            pr.canMakePayment().then(result => {
-                if (result) {
-                    setPaymentRequest(pr);
-                }
-            }).catch(error => {
-                console.error('Error checking canMakePayment for Apple Pay:', error);
-            });
+        pr.canMakePayment().then(result => {
+
+          // store the result so we can inspect available methods (and render for debugging)
+          setAvailablePaymentMethods(result);
+          if (result) {
+            
+            setPaymentRequest(pr);
+          }
+        }).catch(error => {
+          console.error('Error checking canMakePayment for Apple Pay:', error);
+        });
         }
+
     }, [stripe, quoteData.total, settings]);
 
     useEffect(() => {
@@ -243,8 +249,8 @@ const StripeApplePayButton = ({ quoteData, user, quote, onProcessingChange, allT
                     <span className="flex-shrink mx-4 text-xs text-muted-foreground">OR</span>
                     <div className="flex-grow border-t border-border"></div>
                 </div>
-                <PaymentRequestButtonElement options={{ paymentRequest, style: { paymentRequestButton: { height: '56px', theme: 'dark' } } }} className="w-full" />
-            </>
+          <PaymentRequestButtonElement options={{ paymentRequest, style: { paymentRequestButton: { height: '56px', theme: 'dark' } } }} className="w-full" />
+          </>
         );
     }
 
@@ -322,6 +328,11 @@ function QuoteCheckoutPage() {
   const airwallexCardRef = useRef(null);
   const stripePaymentRef = useRef<{ handlePayment: () => Promise<void> }>(null);
   const [airwallexElement, setAirwallexElement] = useState<any>(null);
+
+  // Debug: log payment selection/view changes
+  useEffect(() => {
+    console.log('DEBUG: payment selection changed', { selectedPaymentMethod, paymentView });
+  }, [selectedPaymentMethod, paymentView]);
 
   const paymentMethods = [];
   if (paymentProvider) {
@@ -679,6 +690,7 @@ function QuoteCheckoutPage() {
                           <button
                             key={method.id}
                             onClick={() => {
+                                
                                 setSelectedPaymentMethod(method.id);
                                 setPaymentView(method.type === 'card' ? 'card-details' : 'bank-details');
                             }}
@@ -694,6 +706,18 @@ function QuoteCheckoutPage() {
                             </div>
                           </button>
                       ))}
+                      {paymentProvider === 'stripe' && (
+                        <div className="mt-2">
+                          <StripeApplePayButton
+                              quoteData={quoteData}
+                              user={user}
+                              quote={quote}
+                              onProcessingChange={setIsProcessingPayment}
+                              allTermsAccepted={allTermsAccepted}
+                              settings={settings}
+                          />
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -708,63 +732,53 @@ function QuoteCheckoutPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                        {selectedPaymentMethod === 'stripe' && (
-                            <>
-                                <StripePayment
-                                    ref={stripePaymentRef}
-                                    quoteData={quoteData}
-                                    user={user}
-                                    quote={quote}
-                                    onProcessingChange={setIsProcessingPayment}
-                                />
-                                <StripeApplePayButton
-                                    quoteData={quoteData}
-                                    user={user}
-                                    quote={quote}
-                                    onProcessingChange={setIsProcessingPayment}
-                                    allTermsAccepted={allTermsAccepted}
-                                    settings={settings}
-                                />
-                            </>
-                        )}
-                        {selectedPaymentMethod === 'airwallex' && (
-                            <div id="airwallex-card-element" ref={airwallexCardRef} className="border border-border rounded-lg p-4 mb-6"></div>
-                        )}
-                        {selectedPaymentMethod === 'square' && squareAppId && squareLocationId && (settings?.square?.paymentMethods?.card || settings?.square?.paymentMethods?.googlePay || settings?.square?.paymentMethods?.applePay) && (
-                            allTermsAccepted ? (
-                                <PaymentForm
-                                    applicationId={squareAppId}
-                                    locationId={squareLocationId}
-                                    cardTokenizeResponseReceived={handleSquarePayment}
-                                    createPaymentRequest={createPaymentRequest}
-                                >
-                                    <div className="space-y-4 my-4">
-                                    {settings?.square?.paymentMethods?.googlePay && <SquareGooglePay />}
-                                    {settings?.square?.paymentMethods?.applePay && <SquareApplePay />}
-                                    {settings?.square?.paymentMethods?.card && (
-                                        <div className="border border-border rounded-lg p-4">
-                                            <SquareCreditCard />
-                                        </div>
-                                    )}
+                    {selectedPaymentMethod === 'stripe' && (
+                      <>
+                        <StripePayment
+                          ref={stripePaymentRef}
+                          quoteData={quoteData}
+                          user={user}
+                          quote={quote}
+                          onProcessingChange={setIsProcessingPayment}
+                        />
+                      </>
+                    )}
+                    {selectedPaymentMethod === 'airwallex' && (
+                        <div id="airwallex-card-element" ref={airwallexCardRef} className="border border-border rounded-lg p-4 mb-6"></div>
+                    )}
+                    {selectedPaymentMethod === 'square' && squareAppId && squareLocationId && (settings?.square?.paymentMethods?.card || settings?.square?.paymentMethods?.googlePay || settings?.square?.paymentMethods?.applePay) && (
+                        allTermsAccepted ? (
+                            <PaymentForm
+                                applicationId={squareAppId}
+                                locationId={squareLocationId}
+                                cardTokenizeResponseReceived={handleSquarePayment}
+                                createPaymentRequest={createPaymentRequest}
+                            >
+                                <div className="space-y-4 my-4">
+                                {settings?.square?.paymentMethods?.googlePay && <SquareGooglePay />}
+                                {settings?.square?.paymentMethods?.applePay && <SquareApplePay />}
+                                {settings?.square?.paymentMethods?.card && (
+                                    <div className="border border-border rounded-lg p-4">
+                                        <SquareCreditCard />
                                     </div>
-                                </PaymentForm>
-                            ) : (
-                                <div className="rounded-lg border border-dashed border-yellow-500 bg-yellow-50 p-6 text-center">
-                                    <p className="text-sm font-medium leading-relaxed text-yellow-800">
-                                        Please accept all terms and conditions above to proceed with payment.
-                                    </p>
+                                )}
                                 </div>
-                            )
-                        )}
-                        {(selectedPaymentMethod === 'mollie' || selectedPaymentMethod === 'paddle') && (
-                            <div className="rounded-lg border border-border bg-muted p-6 text-center">
-                                <p className="text-sm leading-relaxed text-muted-foreground">
-                                    You will be redirected to our payment processor's secure page to complete your payment.
+                            </PaymentForm>
+                        ) : (
+                            <div className="rounded-lg border border-dashed border-yellow-500 bg-yellow-50 p-6 text-center">
+                                <p className="text-sm font-medium leading-relaxed text-yellow-800">
+                                    Please accept all terms and conditions above to proceed with payment.
                                 </p>
                             </div>
-                        )}
-                    </div>
+                        )
+                    )}
+                    {(selectedPaymentMethod === 'mollie' || selectedPaymentMethod === 'paddle') && (
+                        <div className="rounded-lg border border-border bg-muted p-6 text-center">
+                            <p className="text-sm leading-relaxed text-muted-foreground">
+                                You will be redirected to our payment processor's secure page to complete your payment.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="space-y-3 pt-2">
                         {checkboxContent.map((content, index) => (

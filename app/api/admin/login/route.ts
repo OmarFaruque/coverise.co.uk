@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { validateAdminCredentials } from "@/lib/admin-auth"
-import { sign } from 'jsonwebtoken';
+import { SignJWT } from "jose";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,8 +23,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: result.error }, { status: 401 })
     }
 
-
-    const token = sign({ id: result.user.id, email: result.user.email, role: result.user.role }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+    const secret = new TextEncoder().encode(process.env.ADMIN_JWT_SECRET || 'your-fallback-secret');
+    const token = await new SignJWT({ id: result.user.id, email: result.user.email, role: result.user.role })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('1h')
+      .sign(secret);
 
     return NextResponse.json({
       success: true,

@@ -1,8 +1,10 @@
+import { NextRequest } from "next/server";
 import { createRateLimiter } from "./validation"
 import { db } from '@/lib/db';
 import { admins } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 import { compare } from 'bcryptjs';
+import { jwtVerify } from "jose";
 
 // Rate limiter for admin login attempts
 const adminLoginRateLimit = createRateLimiter(15 * 60 * 1000, 5) // 5 attempts per 15 minutes
@@ -38,16 +40,21 @@ export async function validateAdminCredentials(email: string, password_provided:
 }
 
 
-export async function isAdminAuthenticated(): Promise<boolean> {
-  // In a real application, this would verify a JWT token or session
-  // For now, we'll check if there's an admin token in localStorage (client-side)
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("adminAuthToken")
-    return token !== null
+export async function isAdmin(req: NextRequest): Promise<boolean> {
+  const token = req.cookies.get('adminAuthToken')?.value;
+
+  if (!token) {
+    return false;
   }
 
-  // Server-side check would verify against database/session store
-  return false
+  try {
+    const secret = new TextEncoder().encode(process.env.ADMIN_JWT_SECRET || 'your-fallback-secret');
+    await jwtVerify(token, secret);
+    return true;
+  } catch (error) {
+    console.error("JWT verification failed:", error);
+    return false;
+  }
 }
 
 export function setAdminAuthToken(token: string): void {

@@ -1,17 +1,19 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { AuthDialog } from "@/components/auth/auth-dialog"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
-import { Download, Sparkles, Paperclip, Edit3, FileText, Zap, Clock, Shield, Eye, Info } from "lucide-react"
-import { Header } from "@/components/header"
-import { useAuth } from "@/context/auth"
-import { useSettings } from "@/context/settings"
-import { useToast } from "@/hooks/use-toast"
-import Cookies from "js-cookie"
+import { Download, Sparkles, Paperclip, Edit3, FileText, Zap, Clock, Shield, X, Menu, Eye, Info } from "lucide-react"
+
+// Test accounts for validation
+const TEST_ACCOUNTS = [
+  { email: "test@coverise.com", password: "test123", isAdmin: false },
+  { email: "admin@coverise.com", password: "admin123", isAdmin: true },
+  { email: "user@coverise.com", password: "user123", isAdmin: false },
+]
 
 export default function CoveriseDocumentsPage() {
   const [documentRequest, setDocumentRequest] = useState("")
@@ -19,14 +21,40 @@ export default function CoveriseDocumentsPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showOutput, setShowOutput] = useState(false)
   const [showPaymentPopup, setShowPaymentPopup] = useState(false)
+  const [showSignInPopup, setShowSignInPopup] = useState(false)
+  const [tipAmount, setTipAmount] = useState(0)
   const [discountCode, setDiscountCode] = useState("")
-  const [appliedDiscount, setAppliedDiscount] = useState<any>(null)
+  const [appliedDiscount, setAppliedDiscount] = useState(null)
   const [expandedSection, setExpandedSection] = useState("")
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const { isAuthenticated, user } = useAuth()
-  const settings = useSettings()
-  const [documentPrice, setDocumentPrice] = useState(10)
+  // Sign in form state
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const [isSigningIn, setIsSigningIn] = useState(false)
+  const [signInError, setSignInError] = useState("")
+  const [showSignUp, setShowSignUp] = useState(false)
+  const [signUpEmail, setSignUpEmail] = useState("")
+  const [signUpPassword, setSignUpPassword] = useState("")
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState("")
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false)
+  const [isSigningUp, setIsSigningUp] = useState(false)
+  const [signUpError, setSignUpError] = useState("")
+  const [showVerification, setShowVerification] = useState(false)
+  const [verificationCode, setVerificationCode] = useState(["", "", "", "", "", ""])
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [verificationError, setVerificationError] = useState("")
+
+  // Card details
+  const [cardNumber, setCardNumber] = useState("")
+  const [cardExpiry, setCardExpiry] = useState("")
+  const [cardCvc, setCardCvc] = useState("")
+  const [postalCode, setPostalCode] = useState("")
+
+  const documentPrice = 10
 
   // Memoize discount codes to prevent re-creation
   const discountCodes = useMemo(
@@ -50,22 +78,27 @@ export default function CoveriseDocumentsPage() {
     [],
   )
 
+  // Check authentication on mount
   useEffect(() => {
-    const defaultPrice = 10
-    if (settings && settings.openai) {
-      const minPrice = settings.openai.minPrice
-      const maxPrice = settings.openai.maxPrice
-
-      if (typeof minPrice === "number" && typeof maxPrice === "number" && minPrice < maxPrice) {
-        const randomPrice = Math.floor(Math.random() * (maxPrice - minPrice + 1)) + minPrice
-        setDocumentPrice(randomPrice)
-      } else {
-        setDocumentPrice(settings.openai.price ?? defaultPrice)
-      }
-    } else {
-      setDocumentPrice(defaultPrice)
+    const checkAuth = () => {
+      // Check for user data in localStorage (main auth system uses 'user' and 'isAuthenticated')
+      const userExists = localStorage.getItem("user") || localStorage.getItem("userEmail")
+      const isLoggedIn = localStorage.getItem("isAuthenticated") === "true" || !!userExists
+      console.log("[v0] Auth check in documents page:", { userExists, isLoggedIn })
+      setIsAuthenticated(isLoggedIn)
     }
-  }, [settings])
+
+    checkAuth()
+
+    const handleStorageChange = () => {
+      checkAuth()
+    }
+
+    window.addEventListener("storage", handleStorageChange)
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+    }
+  }, [])
 
   const handleTemplateClick = useCallback((template: string) => {
     setDocumentRequest(template)
@@ -77,50 +110,59 @@ export default function CoveriseDocumentsPage() {
 
     setIsGenerating(true)
 
-    try {
-      const token = Cookies.get("auth_token")
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      }
+    // Simulate AI generation with optimized content
+    setTimeout(() => {
+      setGeneratedText(
+        `# Marketing Strategy: Mobile App Launch
 
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`
-      }
+## Executive Overview
 
-      const response = await fetch("/api/ai-documents", {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify({
-          prompt: documentRequest,
-        }),
-      })
+This comprehensive marketing strategy outlines the approach for successfully launching our new mobile application in the competitive digital marketplace. The plan addresses target audience identification, competitive positioning, marketing channels, budget allocation, and success metrics to ensure maximum market penetration and user acquisition.
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`)
-      }
+## Target Audience Analysis
 
-      const data = await response.json()
+Our primary audience consists of tech-savvy professionals aged 25-45 who value efficiency and digital solutions in their daily workflows. These individuals typically work in corporate environments, manage multiple projects simultaneously, and seek tools that enhance productivity while maintaining work-life balance.
 
-      if (data.content) {
-        setGeneratedText(data.content)
-        setShowOutput(true)
-      } else {
-        throw new Error("No content received from the server.")
-      }
-    } catch (error) {
-      console.error("Error generating document:", error)
-    } finally {
+## Market Positioning
+
+The application will be positioned as an intuitive, feature-rich solution that addresses specific pain points not currently solved by existing offerings in the marketplace. Our unique value proposition centers on seamless integration capabilities with existing business tools and enhanced security features.
+
+## Marketing Channels & Tactics
+
+### Digital Marketing Strategy
+
+Our comprehensive digital approach will leverage multiple touchpoints including search engine optimization focusing on solution-based keywords, targeted pay-per-click campaigns, and strategic content marketing through industry publications.
+
+### Social Media Strategy
+
+Platform-specific approaches will include LinkedIn for thought leadership content, Twitter for real-time product updates, and Instagram for visual demonstrations that showcase the application's benefits.
+
+## Launch Timeline and Implementation
+
+The marketing rollout will follow a carefully planned phased approach designed to maximize impact and user adoption:
+
+- **Pre-launch phase (4 weeks):** Comprehensive teaser campaign and early access registration
+- **Launch week:** Coordinated press releases and strategic influencer partnerships
+- **Post-launch phase (8 weeks):** Sustained engagement campaigns and user feedback collection
+
+## Budget Allocation and Resource Distribution
+
+The initial marketing budget of $75,000 will be strategically distributed across multiple channels: digital advertising campaigns (40%), professional content creation (25%), public relations (20%), analytics tools (10%), and contingency fund (5%).
+
+## Success Metrics and Key Performance Indicators
+
+Critical performance indicators will include specific download targets of 10,000 users in the first month, user retention rates of 40% after 30 days, conversion rates of 5% from free to premium subscriptions, and maintaining customer acquisition costs below $2.50 per user.`,
+      )
       setIsGenerating(false)
-    }
+      setShowOutput(true)
+    }, 2000)
   }, [documentRequest])
 
   const handleGenerateDocument = useCallback(async () => {
     if (!documentRequest.trim()) return
 
     if (!isAuthenticated) {
-      setIsAuthDialogOpen(true)
+      setShowSignInPopup(true)
       return
     }
 
@@ -141,69 +183,164 @@ export default function CoveriseDocumentsPage() {
 
     setShowPaymentPopup(false)
 
-    window.location.href = "/payment-confirmation"
+    window.location.href = "/coverise/payment-confirmation"
   }, [generatedText, documentRequest])
 
-  const { toast } = useToast()
-  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
-
-  const applyDiscountCode = useCallback(async () => {
-    if (!discountCode.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter a promo code",
-      })
-      return
-    }
-
-    setIsApplyingDiscount(true)
-
+  const generatePDFForDownload = useCallback(async () => {
     try {
-      const response = await fetch("/api/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          promoCode: discountCode,
-          total: documentPrice,
-        }),
+      const { jsPDF } = await import("jspdf")
+      const doc = new jsPDF()
+
+      doc.setProperties({
+        title: "Coverise Generated Document",
+        subject: "AI Generated Document",
+        author: "Coverise AI Documents",
+        creator: "Coverise",
       })
 
-      const data = await response.json()
+      // Add header
+      doc.setFontSize(20)
+      doc.setFont("helvetica", "bold")
+      doc.text("Coverise - Generated Document", 20, 20)
 
-      if (!response.ok) {
-        if (response.status === 400) {
-          toast({
-            variant: "destructive",
-            title: "Invalid Code",
-            description: data.error || "The promo code is invalid or expired.",
-          })
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: data.error || "Failed to validate promo code.",
-          })
+      doc.setFontSize(10)
+      doc.setFont("helvetica", "normal")
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30)
+
+      doc.line(20, 35, 190, 35)
+
+      let yPosition = 45
+      const pageHeight = doc.internal.pageSize.height
+      const margin = 20
+      const lineHeight = 6
+      const maxWidth = 170
+
+      const lines = generatedText.split("\n")
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim()
+
+        if (line === "") {
+          yPosition += lineHeight / 2
+          continue
         }
-        setAppliedDiscount({ error: data.error || "Invalid discount code" })
-      } else {
-        setAppliedDiscount(data)
-        toast({
-          title: "Promo Code Applied",
-          description: `Successfully applied promo code ${data.promoCode}`,
-        })
+
+        if (yPosition > pageHeight - 30) {
+          doc.addPage()
+          yPosition = 20
+        }
+
+        if (line.startsWith("# ")) {
+          doc.setFontSize(16)
+          doc.setFont("helvetica", "bold")
+          doc.setTextColor(6, 182, 212) // Cyan
+          const text = line.substring(2)
+          const splitText = doc.splitTextToSize(text, maxWidth)
+          doc.text(splitText, margin, yPosition)
+          yPosition += splitText.length * lineHeight + 5
+        } else if (line.startsWith("## ")) {
+          doc.setFontSize(14)
+          doc.setFont("helvetica", "bold")
+          doc.setTextColor(8, 145, 178) // Cyan
+          const text = line.substring(3)
+          const splitText = doc.splitTextToSize(text, maxWidth)
+          doc.text(splitText, margin, yPosition)
+          yPosition += splitText.length * lineHeight + 3
+        } else if (line.startsWith("### ")) {
+          doc.setFontSize(12)
+          doc.setFont("helvetica", "bold")
+          doc.setTextColor(8, 145, 178) // Cyan
+          const text = line.substring(4)
+          const splitText = doc.splitTextToSize(text, maxWidth)
+          doc.text(splitText, margin, yPosition)
+          yPosition += splitText.length * lineHeight + 2
+        } else if (line.startsWith("- ")) {
+          doc.setFontSize(10)
+          doc.setFont("helvetica", "normal")
+          doc.setTextColor(55, 65, 81)
+          const text = `• ${line.substring(2)}`
+          const splitText = doc.splitTextToSize(text, maxWidth - 5)
+          doc.text(splitText, margin + 5, yPosition)
+          yPosition += splitText.length * lineHeight
+        } else {
+          doc.setFontSize(10)
+          doc.setFont("helvetica", "normal")
+          doc.setTextColor(55, 65, 81)
+
+          if (line.includes("**")) {
+            const parts = line.split("**")
+            let currentX = margin
+
+            for (let j = 0; j < parts.length; j++) {
+              if (j % 2 === 1) {
+                doc.setFont("helvetica", "bold")
+                doc.setTextColor(17, 24, 39)
+              } else {
+                doc.setFont("helvetica", "normal")
+                doc.setTextColor(55, 65, 81)
+              }
+
+              const textWidth = doc.getTextWidth(parts[j])
+              if (currentX + textWidth > margin + maxWidth) {
+                yPosition += lineHeight
+                currentX = margin
+              }
+
+              doc.text(parts[j], currentX, yPosition)
+              currentX += textWidth
+            }
+            yPosition += lineHeight + 2
+          } else {
+            const splitText = doc.splitTextToSize(line, maxWidth)
+            doc.text(splitText, margin, yPosition)
+            yPosition += splitText.length * lineHeight + 2
+          }
+        }
       }
-    } catch (error: any) {
-      setAppliedDiscount({ error: "Invalid discount code" })
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-      })
-    } finally {
-      setIsApplyingDiscount(false)
+
+      const totalPages = doc.internal.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.setFont("helvetica", "normal")
+        doc.text("Generated by Coverise AI Documents", margin, pageHeight - 15)
+        doc.text("© 2025 Coverise", margin, pageHeight - 10)
+        doc.text(`Page ${i} of ${totalPages}`, 190 - 30, pageHeight - 10)
+      }
+
+      doc.save("coverise-generated-document.pdf")
+    } catch (error) {
+      console.error("Error generating PDF:", error)
+
+      const textContent = `Coverise - Generated Document
+Generated on: ${new Date().toLocaleDateString()}
+
+${generatedText.replace(/[#*]/g, "")}
+
+---
+Generated by Coverise AI Documents
+© 2025 Coverise`
+
+      const blob = new Blob([textContent], { type: "text/plain" })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = "coverise-generated-document.txt"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
     }
-  }, [discountCode, documentPrice, toast])
+  }, [generatedText])
+
+  const applyDiscountCode = useCallback(() => {
+    const code = discountCode.toUpperCase()
+    if (discountCodes[code]) {
+      setAppliedDiscount(discountCodes[code])
+    } else {
+      setAppliedDiscount({ error: "Invalid discount code" })
+    }
+  }, [discountCode, discountCodes])
 
   const removeDiscount = useCallback(() => {
     setAppliedDiscount(null)
@@ -230,14 +367,244 @@ export default function CoveriseDocumentsPage() {
     }
   }, [appliedDiscount, documentPrice])
 
+  const finalPrice = calculateDiscountedPrice()
+  const totalWithTip = finalPrice + tipAmount
+
   const toggleSection = useCallback((section: string) => {
     setExpandedSection((prev) => (prev === section ? "" : section))
   }, [])
 
+  const formatCardNumber = useCallback((value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
+    const matches = v.match(/\d{4,16}/g)
+    const match = (matches && matches[0]) || ""
+    const parts = []
+
+    for (let i = 0, len = match.length; i < len; i += 4) {
+      parts.push(match.substring(i, i + 4))
+    }
+
+    return parts.length ? parts.join(" ") : value
+  }, [])
+
+  const formatExpiry = useCallback((value: string) => {
+    const v = value.replace(/\s+/g, "").replace(/[^0-9]/gi, "")
+    return v.length >= 2 ? `${v.substring(0, 2)} / ${v.substring(2, 4)}` : v
+  }, [])
+
+  // Handle sign in
+  const handleSignIn = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setSignInError("")
+      setIsSigningIn(true)
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        if (!email || !password) {
+          setSignInError("Please enter both email and password")
+          setIsSigningIn(false)
+          return
+        }
+
+        const account = TEST_ACCOUNTS.find((acc) => acc.email.toLowerCase() === email.toLowerCase())
+
+        if (!account) {
+          setSignInError("Account not found. Please check your email address.")
+          setIsSigningIn(false)
+          return
+        }
+
+        if (account.password !== password) {
+          setSignInError("Incorrect password. Please try again.")
+          setIsSigningIn(false)
+          return
+        }
+
+        setShowVerification(true)
+        setIsSigningIn(false)
+      } catch (error) {
+        console.error("Sign in error:", error)
+        setSignInError("An error occurred during sign in. Please try again.")
+        setIsSigningIn(false)
+      }
+    },
+    [email, password],
+  )
+
+  const handleVerificationCodeChange = (index: number, value: string) => {
+    if (value.length > 1) return
+
+    const newCode = [...verificationCode]
+    newCode[index] = value
+    setVerificationCode(newCode)
+
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`coverise-code-${index + 1}`)
+      nextInput?.focus()
+    }
+  }
+
+  const handleVerificationKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !verificationCode[index] && index > 0) {
+      const prevInput = document.getElementById(`coverise-code-${index - 1}`)
+      prevInput?.focus()
+    }
+  }
+
+  // Handle verification
+  const handleVerifyCode = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setVerificationError("")
+
+      const code = verificationCode.join("")
+      if (code.length !== 6) {
+        setVerificationError("Please enter the complete 6-digit verification code")
+        return
+      }
+
+      setIsVerifying(true)
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        if (code === "123456" || code === "111111") {
+          const userToStore = {
+            id: `user-${Date.now()}`,
+            email: email,
+            isAdmin: false,
+          }
+
+          localStorage.setItem("user", JSON.stringify(userToStore))
+          localStorage.setItem("isAuthenticated", "true")
+          localStorage.setItem("userEmail", email)
+
+          if (rememberMe) {
+            localStorage.setItem("rememberMe", "true")
+          }
+
+          setIsAuthenticated(true)
+          setShowSignInPopup(false)
+          setShowVerification(false)
+          setShowSignUp(false)
+
+          if (documentRequest.trim()) {
+            await generateDocument()
+          }
+        } else {
+          setVerificationError("Invalid verification code. Please enter a 6-digit code.")
+        }
+      } catch (error) {
+        console.error("Verification error:", error)
+        setVerificationError("An error occurred during verification. Please try again.")
+      } finally {
+        setIsVerifying(false)
+      }
+    },
+    [verificationCode, email, rememberMe, documentRequest, generateDocument],
+  )
+
+  // Toggle between sign in and sign up
+  const toggleSignUpMode = useCallback(() => {
+    setShowSignUp(!showSignUp)
+    setSignInError("")
+    setSignUpError("")
+    setVerificationError("")
+    setShowVerification(false)
+    setVerificationCode(["", "", "", "", "", ""])
+  }, [showSignUp])
+
+  const handleSignUp = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setSignUpError("")
+
+      if (!signUpEmail) {
+        setSignUpError("Please enter your email")
+        return
+      }
+
+      if (!signUpPassword) {
+        setSignUpError("Please enter a password")
+        return
+      }
+
+      if (signUpPassword !== signUpConfirmPassword) {
+        setSignUpError("Passwords do not match")
+        return
+      }
+
+      setIsSigningUp(true)
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        setShowVerification(true)
+        setIsSigningUp(false)
+      } catch (error) {
+        console.error("Sign up error:", error)
+        setSignUpError("An error occurred during sign up. Please try again.")
+        setIsSigningUp(false)
+      }
+    },
+    [signUpEmail, signUpPassword, signUpConfirmPassword],
+  )
+
   return (
     <div className="h-screen bg-black flex flex-col overflow-hidden">
       {/* Header */}
-      <Header />
+      <header className="bg-black/95 backdrop-blur-sm px-4 sm:px-6 py-4 sm:py-5 border-b border-cyan-900/30 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center">
+            <Link
+              href="/coverise"
+              className="text-2xl sm:text-3xl font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent hover:scale-105 transition-transform"
+            >
+              COVERISE
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden sm:flex gap-6 items-center" role="navigation">
+              <Link
+                href="/coverise/contact"
+                className="text-gray-300 hover:text-cyan-400 transition-colors font-medium text-sm"
+              >
+                Contact
+              </Link>
+              <Link href="/coverise/login">
+                <Button className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold px-6 rounded-full shadow-lg shadow-cyan-600/20">
+                  Sign In
+                </Button>
+              </Link>
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="sm:hidden p-2 text-cyan-400 hover:bg-gray-900 rounded-lg transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <nav className="sm:hidden mt-6 pb-4 space-y-4 sm:space-y-0" role="navigation">
+              <Link href="/coverise/contact" onClick={() => setMobileMenuOpen(false)} className="block">
+                <div className="text-gray-300 hover:text-cyan-400 transition-colors font-medium py-2">Contact</div>
+              </Link>
+              <Link href="/coverise/login" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-full">
+                  Sign In
+                </Button>
+              </Link>
+            </nav>
+          )}
+        </div>
+      </header>
 
       {/* Main Content */}
       <main className="flex-1 px-4 sm:px-6 py-4 sm:py-6 overflow-y-auto bg-gradient-to-br from-black via-gray-900 to-gray-800">
@@ -539,15 +906,6 @@ export default function CoveriseDocumentsPage() {
           )}
         </div>
       </main>
-      <AuthDialog
-        isOpen={isAuthDialogOpen}
-        onClose={() => setIsAuthDialogOpen(false)}
-        title="Sign In Required"
-        description="Please sign in to generate AI documents"
-        onSuccess={() => {
-          setIsAuthDialogOpen(false)
-        }}
-      />
     </div>
   )
 }

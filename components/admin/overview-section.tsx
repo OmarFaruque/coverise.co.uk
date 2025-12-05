@@ -91,7 +91,7 @@ export function OverviewSection({ statsData, recentActivityData, systemStatusDat
       description: "vs. previous 30 days",
     },
     {
-      title: "Active Policies",
+      title: "Active Documents",
       value: statsData.activePolicies.value.toLocaleString(),
       change: statsData.activePolicies.change, // Note: This change is static
       changeType: statsData.activePolicies.changeType,

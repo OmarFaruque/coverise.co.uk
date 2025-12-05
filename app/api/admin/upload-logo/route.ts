@@ -1,22 +1,29 @@
-import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { NextRequest, NextResponse } from "next/server"
+import { isAdmin } from "@/lib/admin-auth"
+import { put } from '@vercel/blob';
 
-export async function POST(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const filename = searchParams.get('filename');
-
-  if (!filename || !req.body) {
-    return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+export async function POST(req: NextRequest) {
+  if (!(await isAdmin(req))) {
+    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const blob = await put(filename, req.body, {
+    const formData = await req.formData()
+    const file = formData.get("file") as File | null
+
+    if (!file) {
+      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 })
+    }
+
+    const filename = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
+    
+    const blob = await put(filename, file, {
       access: 'public',
     });
 
-    return NextResponse.json(blob);
+    return NextResponse.json({ success: true, url: blob.url })
   } catch (error) {
-    console.error("Logo upload failed:", error);
-    return NextResponse.json({ error: "Logo upload failed" }, { status: 500 });
+    console.error("Error uploading file:", error)
+    return NextResponse.json({ success: false, error: "File upload failed" }, { status: 500 })
   }
 }
