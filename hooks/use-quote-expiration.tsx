@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
+import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Clock, Home } from "lucide-react";
 import { parseISO } from 'date-fns';
 
 export function useQuoteExpiration(quote: any, paymentMethod?: string) {
@@ -51,23 +52,52 @@ export function useQuoteExpiration(quote: any, paymentMethod?: string) {
 
   const ExpirationDialog = () => (
     <AlertDialog open={isExpired}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Quote Expired</AlertDialogTitle>
-          <AlertDialogDescription>
-            Your quote has expired. Please run a new quote again.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction onClick={() => {
-            localStorage.removeItem("quoteData");
-            localStorage.removeItem("quoteRestorationData");
-            localStorage.removeItem("quoteCreationTimestamp");
-            router.push('/');
-          }}>
-            Go to Homepage
-          </AlertDialogAction>
-        </AlertDialogFooter>
+      <AlertDialogContent className="bg-gray-900 border border-cyan-500/20 max-w-md p-0 overflow-hidden">
+        <div>
+          {/* Header with gradient */}
+          <div className="h-1 bg-gradient-to-r from-cyan-600 to-teal-600" />
+          
+          <div className="p-8">
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-teal-500/20 rounded-full flex items-center justify-center border border-cyan-500/30">
+                <Clock className="w-8 h-8 text-cyan-400 animate-pulse" />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-white text-center mb-2">
+              Quote Expired
+            </h2>
+
+            {/* Divider */}
+            <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent mb-4" />
+
+            {/* Description */}
+            <p className="text-center text-gray-300 mb-8">
+              Your quote session has expired after 10 minutes of inactivity. Please generate a new quote to continue.
+            </p>
+
+            {/* Action Button */}
+            <Button
+              onClick={() => {
+                localStorage.removeItem("quoteData");
+                localStorage.removeItem("quoteRestorationData");
+                localStorage.removeItem("quoteCreationTimestamp");
+                router.push('/');
+              }}
+              className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white h-12 font-semibold rounded-lg flex items-center justify-center gap-2"
+            >
+              <Home className="w-5 h-5" />
+              Go to Homepage
+            </Button>
+
+            {/* Footer note */}
+            <p className="text-xs text-gray-500 text-center mt-6">
+              You will be redirected to generate a new quote
+            </p>
+          </div>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );

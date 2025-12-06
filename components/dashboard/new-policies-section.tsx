@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { User } from "@/lib/definitions"
+import { getPoliciesByEmail } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   UserIcon,
@@ -27,33 +27,50 @@ import {
 
 const PoliciesSection = () => {
   const [policies, setPolicies] = useState([])
-  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPolicy, setSelectedPolicy] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("/api/dashboard/policies")
-        if (!response.ok) {
-          throw new Error("Failed to fetch data")
-        }
-        const { policies, user } = await response.json()
+  const demoOrder = {
+    id: "demo-001",
+    policyNumber: "P-12345",
+    registration: "AB12 CDE",
+    make: "Volkswagen",
+    model: "Golf",
+    status: "active",
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+    price: "£25.00",
+    duration: "7 days",
+    premium: 25.0,
+    createdAt: new Date().toISOString(),
+  }
 
-        setPolicies(policies)
-        setUser(user || null)
+  useEffect(() => {
+    const fetchPolicies = async () => {
+      try {
+        const userEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail")
+
+        if (!userEmail) {
+          setError("User not authenticated")
+          setLoading(false)
+          return
+        }
+
+        const userPolicies = await getPoliciesByEmail(userEmail)
+        setPolicies([demoOrder, ...userPolicies])
         setLoading(false)
       } catch (err) {
-        console.error("Error fetching data:", err)
-        setError("Failed to load data. Please try again later.")
+        console.error("Error fetching documents:", err)
+        setError("Failed to load documents. Please try again later.")
+        setPolicies([demoOrder])
         setLoading(false)
       }
     }
 
-    fetchData()
+    fetchPolicies()
   }, [])
 
   const getStatusColor = (status) => {
@@ -62,10 +79,12 @@ const PoliciesSection = () => {
         return "bg-green-500/20 text-green-400 border-green-500/30"
       case "expired":
         return "bg-red-500/20 text-red-400 border-red-500/30"
-      case "upcoming":
+      case "pending":
         return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-      default:
+      case "cancelled":
         return "bg-gray-500/20 text-gray-400 border-gray-500/30"
+      default:
+        return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
     }
   }
 
@@ -75,33 +94,21 @@ const PoliciesSection = () => {
         return "🟢"
       case "expired":
         return "🔴"
-      case "upcoming":
+      case "pending":
         return "🟡"
+      case "cancelled":
+        return "⚫"
       default:
-        return "⚪"
+        return "🔵"
     }
-  }
-
-  const getPolicyStatus = (policy) => {
-    const now = new Date()
-    const startDate = new Date(policy.startDate)
-    const endDate = new Date(policy.endDate)
-
-    if (endDate < now) {
-      return "expired"
-    }
-    if (startDate > now) {
-      return "upcoming"
-    }
-    return "active"
   }
 
   const filteredPolicies = policies.filter(
     (policy) =>
       policy.policyNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.vehicleMake.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.vehicleModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      policy.regNumber.toLowerCase().includes(searchTerm.toLowerCase()),
+      policy.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      policy.registration.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const formatDate = (dateString) => {
@@ -136,15 +143,6 @@ const PoliciesSection = () => {
       return days === 1 ? "1 day" : `${days} days`
     }
   }
-  
-  const getPolicyPremium = (policy) => {
-    const source = policy.updatePrice ?? policy.cpw
-    if (source === null || source === undefined || source === "") {
-      return null
-    }
-    const value = Number(source)
-    return Number.isFinite(value) ? value : null
-  }
 
   const openModal = (policy) => {
     setSelectedPolicy(policy)
@@ -160,12 +158,13 @@ const PoliciesSection = () => {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-          <Skeleton className="h-8 w-48 bg-gray-800" />
-          <Skeleton className="h-10 w-64 bg-gray-800" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-64" />
         </div>
         <div className="grid gap-6">
-          <Skeleton className="h-48 w-full bg-gray-800" />
-          <Skeleton className="h-48 w-full bg-gray-800" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
         </div>
       </div>
     )
@@ -195,14 +194,17 @@ const PoliciesSection = () => {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
         <div className="text-center max-w-md px-6">
+          {/* Animated gradient background circle */}
           <div className="relative mb-8">
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-teal-500/20 rounded-full blur-3xl" />
             <div className="relative w-24 h-24 bg-gradient-to-br from-cyan-500/10 to-teal-500/10 rounded-full flex items-center justify-center mx-auto border border-cyan-500/30">
               <Shield className="w-12 h-12 text-cyan-400" />
             </div>
           </div>
+
           <h3 className="text-2xl font-bold text-white mb-3">No Documents Yet</h3>
-          <Link href="/">
+
+          <Link href="/coverise">
             <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white font-semibold px-8 py-6 text-base shadow-lg shadow-cyan-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/40 hover:scale-105">
               <Shield className="w-5 h-5 mr-2" />
               Get Your First Document
@@ -215,6 +217,7 @@ const PoliciesSection = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">My Documents</h2>
@@ -222,6 +225,8 @@ const PoliciesSection = () => {
             {policies.length} {policies.length === 1 ? "document" : "documents"} found
           </p>
         </div>
+
+        {/* Search Bar */}
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
           <Input
@@ -234,11 +239,9 @@ const PoliciesSection = () => {
         </div>
       </div>
 
+      {/* Policy Cards */}
       <div className="grid gap-6">
-        {filteredPolicies.map((policy) => {
-          const status = getPolicyStatus(policy);
-          const premium = getPolicyPremium(policy);
-          return(
+        {filteredPolicies.map((policy) => (
           <Card
             key={policy.id}
             className="bg-gray-900/50 border border-cyan-500/30 hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-200 backdrop-blur-sm"
@@ -255,14 +258,15 @@ const PoliciesSection = () => {
                   </div>
                 </div>
 
-                <Badge className={`${getStatusColor(status)} font-medium`}>
-                  <span className="mr-1">{getStatusIcon(status)}</span>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                <Badge className={`${getStatusColor(policy.status)} font-medium`}>
+                  <span className="mr-1">{getStatusIcon(policy.status)}</span>
+                  {policy.status.charAt(0).toUpperCase() + policy.status.slice(1)}
                 </Badge>
               </div>
             </CardHeader>
 
             <CardContent className="pt-0">
+              {/* Vehicle Info */}
               <div className="bg-black/30 rounded-lg p-4 mb-4 border border-cyan-500/20">
                 <div className="flex items-center gap-2 mb-3">
                   <Car className="w-4 h-4 text-cyan-400" />
@@ -271,17 +275,17 @@ const PoliciesSection = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-gray-400">Registration</span>
-                    <p className="font-medium text-white">{policy.regNumber}</p>
+                    <p className="font-medium text-white">{policy.registration}</p>
                   </div>
                   <div>
                     <span className="text-gray-400">Make & Model</span>
                     <p className="font-medium text-white">
-                      {policy.vehicleMake} {policy.vehicleModel}
+                      {policy.make} {policy.model}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-400">Premium</span>
-                    <p className="font-medium text-cyan-400">£{premium !== null ? premium.toFixed(2) : "N/A"}</p>
+                    <p className="font-medium text-cyan-400">£{policy.premium.toFixed(2)}</p>
                   </div>
                   <div>
                     <span className="text-gray-400">Duration</span>
@@ -290,6 +294,7 @@ const PoliciesSection = () => {
                 </div>
               </div>
 
+              {/* Document Period */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 bg-black/30 rounded-lg mb-4 border border-cyan-500/20">
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 text-cyan-400" />
@@ -307,6 +312,7 @@ const PoliciesSection = () => {
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={() => openModal(policy)}
@@ -316,7 +322,7 @@ const PoliciesSection = () => {
                   <Eye className="w-4 h-4 mr-2" />
                   Details
                 </Button>
-                <Link href={`/order/view?number=${policy.policyNumber}`} className="flex-1">
+                <Link href={`/coverise/order/view?number=${policy.policyNumber}`} className="flex-1">
                   <Button className="w-full bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white shadow-lg shadow-cyan-500/25">
                     <FileTextIcon className="w-4 h-4 mr-2" />
                     Documents
@@ -325,9 +331,10 @@ const PoliciesSection = () => {
               </div>
             </CardContent>
           </Card>
-        )})}
+        ))}
       </div>
 
+      {/* No Search Results */}
       {filteredPolicies.length === 0 && searchTerm && (
         <div className="text-center py-16">
           <div className="relative mb-6">
@@ -349,6 +356,7 @@ const PoliciesSection = () => {
         </div>
       )}
 
+      {/* Enhanced Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 border-cyan-500/30">
           <DialogHeader className="border-b border-cyan-500/20 pb-4">
@@ -372,21 +380,24 @@ const PoliciesSection = () => {
 
           {selectedPolicy && (
             <div className="space-y-6 pt-6">
+              {/* Document Status */}
               <div className="flex items-center justify-between p-4 bg-black/30 rounded-lg border border-cyan-500/20">
                 <div className="flex items-center gap-3">
-                  <Badge className={`${getStatusColor(getPolicyStatus(selectedPolicy))} font-medium text-sm`}>
-                    <span className="mr-1">{getStatusIcon(getPolicyStatus(selectedPolicy))}</span>
-                    {getPolicyStatus(selectedPolicy).charAt(0).toUpperCase() + getPolicyStatus(selectedPolicy).slice(1)}
+                  <Badge className={`${getStatusColor(selectedPolicy.status)} font-medium text-sm`}>
+                    <span className="mr-1">{getStatusIcon(selectedPolicy.status)}</span>
+                    {selectedPolicy.status.charAt(0).toUpperCase() + selectedPolicy.status.slice(1)}
                   </Badge>
                   <span className="text-sm text-gray-400">Purchased on {formatDate(selectedPolicy.createdAt)}</span>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-400">Premium</p>
-                  <p className="text-xl font-bold text-cyan-400">£{getPolicyPremium(selectedPolicy) !== null ? getPolicyPremium(selectedPolicy).toFixed(2) : "N/A"}</p>
+                  <p className="text-xl font-bold text-cyan-400">£{selectedPolicy.premium.toFixed(2)}</p>
                 </div>
               </div>
 
+              {/* Main Content Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Personal Information */}
                 <Card className="bg-gray-800/50 border-cyan-500/30">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
@@ -398,11 +409,11 @@ const PoliciesSection = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Full Name</p>
-                        <p className="font-medium text-white">{selectedPolicy?.nameTitle} {selectedPolicy?.firstName ?? user?.firstName} {selectedPolicy?.lastName ?? user?.lastName}</p>
+                        <p className="font-medium text-white">John Smith</p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Date of Birth</p>
-                        <p className="font-medium text-white">{selectedPolicy?.dateOfBirth ? formatDate(selectedPolicy.dateOfBirth) : "N/A"}</p>
+                        <p className="font-medium text-white">15/03/1985</p>
                       </div>
                     </div>
 
@@ -410,7 +421,7 @@ const PoliciesSection = () => {
                       <Mail className="w-4 h-4 text-cyan-400" />
                       <div>
                         <p className="text-sm text-gray-400">Email Address</p>
-                        <p className="font-medium text-white">{user?.email}</p>
+                        <p className="font-medium text-white">john.smith@example.com</p>
                       </div>
                     </div>
 
@@ -418,7 +429,7 @@ const PoliciesSection = () => {
                       <Phone className="w-4 h-4 text-cyan-400" />
                       <div>
                         <p className="text-sm text-gray-400">Phone Number</p>
-                        <p className="font-medium text-white">{selectedPolicy?.phone || "N/A"}</p>
+                        <p className="font-medium text-white">+44 7123 456789</p>
                       </div>
                     </div>
 
@@ -426,12 +437,14 @@ const PoliciesSection = () => {
                       <MapPin className="w-4 h-4 text-cyan-400 mt-1" />
                       <div>
                         <p className="text-sm text-gray-400">Address</p>
-                        <p className="font-medium text-white">{selectedPolicy?.address || "N/A"}</p>
+                        <p className="font-medium text-white">123 Example Street, London</p>
+                        <p className="font-medium text-white">SW1A 1AA</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* Vehicle Information */}
                 <Card className="bg-gray-800/50 border-cyan-500/30">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
@@ -443,20 +456,21 @@ const PoliciesSection = () => {
                     <div className="grid grid-cols-1 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Registration</p>
-                        <p className="font-medium text-white text-lg">{selectedPolicy.regNumber}</p>
+                        <p className="font-medium text-white text-lg">{selectedPolicy.registration}</p>
                       </div>
                     </div>
 
                     <div className="p-3 bg-black/30 rounded-lg border border-cyan-500/10">
                       <p className="text-sm text-gray-400 mb-1">Make & Model</p>
                       <p className="font-medium text-white text-lg">
-                        {selectedPolicy.vehicleMake} {selectedPolicy.vehicleModel}
+                        {selectedPolicy.make} {selectedPolicy.model}
                       </p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
+              {/* Document Information */}
               <Card className="bg-gray-800/50 border-cyan-500/30">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
@@ -479,7 +493,7 @@ const PoliciesSection = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-.center border border-cyan-500/30">
+                      <div className="w-10 h-10 bg-cyan-500/20 rounded-lg flex items-center justify-center border border-cyan-500/30">
                         <Clock className="w-5 h-5 text-cyan-400" />
                       </div>
                       <div>
@@ -496,13 +510,14 @@ const PoliciesSection = () => {
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">Amount Paid</p>
-                        <p className="font-medium text-cyan-400 text-lg">£{selectedPolicy.quoteData ? JSON.parse(selectedPolicy.quoteData).total.toFixed(2) : "N/A"}</p>
+                        <p className="font-medium text-cyan-400 text-lg">£{selectedPolicy.premium.toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-cyan-500/20">
                 <Button
                   onClick={closeModal}

@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useNotifications } from "@/hooks/use-notifications"
 import { NotificationContainer } from "@/components/notification"
+import { validatePolicyAccess } from "@/lib/policy-data"
 import { Shield, AlertCircle, ArrowLeft } from "lucide-react"
 
-export default function PolicyViewPage() {
+export default function CoveriseOrderViewPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { notifications, addNotification, removeNotification } = useNotifications()
   const policyNumber = searchParams.get("number")
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     surname: "",
@@ -100,7 +102,7 @@ export default function PolicyViewPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleVerify = async (e: React.FormEvent) => {
+  const handleVerify = (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validate form
@@ -115,52 +117,60 @@ export default function PolicyViewPage() {
 
     setIsVerifying(true)
 
-    try {
-      const dateOfBirth = `${formData.dateOfBirthYear}-${formData.dateOfBirthMonth.padStart(2, "0")}-${formData.dateOfBirthDay.padStart(2, "0")}`
+    // Simulate a small delay for better UX
+    setTimeout(() => {
+      try {
+        // Format the date for validation (YYYY-MM-DD)
+        const dateOfBirth = `${formData.dateOfBirthYear}-${formData.dateOfBirthMonth.padStart(2, "0")}-${formData.dateOfBirthDay.padStart(2, "0")}`
 
-      const response = await fetch("/api/policy/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          policyNumber: policyNumber!,
-          surname: formData.surname,
-          dateOfBirth,
-          postcode: formData.postcode,
-        }),
-      })
+        // Validate policy access
+        const result = validatePolicyAccess(policyNumber!, formData.surname, dateOfBirth, formData.postcode)
 
-      const result = await response.json()
+        if (result.isValid) {
+          // Store verification status in session storage
+          sessionStorage.setItem(`policy_verified_${policyNumber}`, "true")
 
-      if (response.ok && result.isValid) {
-        sessionStorage.setItem(`policy_verified_${policyNumber}`, "true")
-        addNotification({
-          type: "success",
-          title: "Verification Successful",
-          message: "Order details verified successfully.",
-        })
-        setTimeout(() => {
-          router.push(`/order/details?number=${policyNumber}`)
-        }, 1500)
-      } else {
+          addNotification({
+            type: "success",
+            title: "Verification Successful",
+            message: "Order details verified successfully.",
+          })
+
+          // Redirect to policy details page after a short delay
+          setTimeout(() => {
+            router.push(`/coverise/order/details?number=${policyNumber}`)
+          }, 1500)
+        } else {
+          // Generic error message - don't reveal specific details
+          addNotification({
+            type: "error",
+            title: "Verification Failed",
+            message: "The information provided does not match our records. Please check your details and try again.",
+          })
+        }
+      } catch (error) {
+        console.error("Verification error:", error)
         addNotification({
           type: "error",
-          title: "Verification Failed",
-          message: "The information provided does not match our records. Please check your details and try again.",
+          title: "Verification Error",
+          message: "An error occurred during verification. Please try again.",
         })
+      } finally {
+        setIsVerifying(false)
       }
-    } catch (error) {
-      console.error("Verification error:", error)
-      addNotification({
-        type: "error",
-        title: "Verification Error",
-        message: "An error occurred during verification. Please try again.",
-      })
-    } finally {
-      setIsVerifying(false)
-    }
+    }, 1000)
   }
 
-
+  // Auto-fill demo data function
+  const fillDemoData = () => {
+    setFormData({
+      surname: "SMITH",
+      dateOfBirthDay: "15",
+      dateOfBirthMonth: "03",
+      dateOfBirthYear: "1985",
+      postcode: "SW1A1AA",
+    })
+  }
 
   if (!policyNumber) {
     return (
@@ -215,7 +225,21 @@ export default function PolicyViewPage() {
             <p className="text-xl sm:text-2xl font-bold text-white">{policyNumber}</p>
           </div>
 
-
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6 flex justify-between items-center">
+            <div>
+              <h3 className="text-xs font-semibold text-blue-300 uppercase">Demo Mode</h3>
+              <p className="text-xs text-blue-400">Test with sample data</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={fillDemoData}
+              className="bg-blue-500/20 hover:bg-blue-500/30 border-blue-500/30 text-blue-300 font-semibold"
+            >
+              Fill Demo Data
+            </Button>
+          </div>
 
           <form onSubmit={handleVerify} className="space-y-5">
             <div>

@@ -1,37 +1,107 @@
 "use client"
 
-
-
+import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
 import {
   Car,
   Clock,
-  ArrowLeft,
   User,
   MapPin,
   CreditCard,
   Search,
   CheckCircle,
   Calculator,
-  Download,
-  Shield,
-  Tag,
   FileText,
+  Tag,
+  Check,
+  X,
+  Edit,
 } from "lucide-react"
-import { useAuth } from "@/context/auth"
-import { AuthDialog } from "@/components/auth/auth-dialog"
-import { useToast } from "@/hooks/use-toast"
-import { useQuoteExpiration } from "@/hooks/use-quote-expiration.tsx";
-import { calculateQuote as calculateQuoteCommon } from "@/lib/quote";
 
+// Mock data for the demo registration
+const vehicleData = {
+  LX61JYE: {
+    make: "Volkswagen",
+    model: "Golf",
+    year: "2017",
+  },
+}
 
-import { occupation_list } from "@/lib/occupation";
+// Mock occupation data
+const occupations = [
+  "Accountant",
+  "Actor",
+  "Architect",
+  "Artist",
+  "Baker",
+  "Barber",
+  "Carpenter",
+  "Chef",
+  "Dentist",
+  "Designer",
+  "Doctor",
+  "Driver",
+  "Electrician",
+  "Engineer",
+  "Farmer",
+  "Firefighter",
+  "Journalist",
+  "Lawyer",
+  "Manager",
+  "Mechanic",
+  "Nurse",
+  "Pharmacist",
+  "Photographer",
+  "Pilot",
+  "Plumber",
+  "Police Officer",
+  "Professor",
+  "Programmer",
+  "Receptionist",
+  "Retired",
+  "Sales Representative",
+  "Scientist",
+  "Self Employed",
+  "Student",
+  "Teacher",
+  "Veterinarian",
+  "Waiter/Waitress",
+  "Writer",
+]
+
+// Mock address data for HA35RQ
+const addressData = {
+  HA35RQ: [
+    "1 High Street, Harrow, HA3 5RQ",
+    "2 High Street, Harrow, HA3 5RQ",
+    "3 High Street, Harrow, HA3 5RQ",
+    "4 High Street, Harrow, HA3 5RQ",
+    "5 High Street, Harrow, HA3 5RQ",
+  ],
+}
+
+const getNext5MinuteTime = () => {
+  const now = new Date()
+  const minutes = now.getMinutes()
+  const remainder = minutes % 5
+  now.setMinutes(minutes + (remainder === 0 ? 0 : 5 - remainder))
+  now.setSeconds(0)
+  now.setMilliseconds(0)
+  return now
+}
+
+const formatDateTime = (date: Date) => {
+  const day = date.getDate().toString().padStart(2, "0")
+  const month = (date.getMonth() + 1).toString().padStart(2, "0")
+  const year = date.getFullYear().toString().slice(-2)
+  const hours = date.getHours().toString().padStart(2, "0")
+  const mins = date.getMinutes().toString().padStart(2, "0")
+  return `${day}/${month}/${year} ${hours}:${mins}`
+}
 
 const modificationsData = {
   "Audio & Electronics": [
@@ -115,52 +185,26 @@ const modificationsData = {
   Other: ["Roof racks", "Window tints", "Custom 3D/4D plates"],
 }
 
-// Add a new function to calculate the next 5-minute increment time
-const getNext5MinuteTime = () => {
-  const now = new Date()
-  const minutes = now.getMinutes()
-  const remainder = minutes % 5
-
-  // Add minutes to round up to the next 5-minute increment
-  now.setMinutes(minutes + (remainder === 0 ? 0 : 5 - remainder))
-  now.setSeconds(0)
-  now.setMilliseconds(0)
-
-  return now
-}
-
-// Format date as dd/mm/yy hh:mm
-const formatDateTime = (date: Date) => {
-  const day = date.getDate().toString().padStart(2, "0")
-  const month = (date.getMonth() + 1).toString().padStart(2, "0")
-  const year = date.getFullYear().toString().slice(-2)
-  const hours = date.getHours().toString().padStart(2, "0")
-  const mins = date.getMinutes().toString().padStart(2, "0")
-
-  return `${day}/${month}/${year} ${hours}:${mins}`
-}
-
 export default function GetQuotePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const registrationFromHome = searchParams.get("reg")
-  const [isClient, setIsClient] = useState(false)
+  const registrationFromHome = searchParams.get("registration")
+
+  const occupationInputRef = useRef<HTMLInputElement>(null)
+  const dobDayRef = useRef<HTMLInputElement>(null)
+  const dobMonthRef = useRef<HTMLInputElement>(null)
+  const dobYearRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  // Redirect to home if accessed directly without registration parameter
-  useEffect(() => {
-    if (isClient && !registrationFromHome) {
-      router.push("/")
+    if (!registrationFromHome) {
+      router.push("/coverise")
+      return
     }
-  }, [isClient, registrationFromHome, router])
+  }, [registrationFromHome, router])
 
-
-  // 1. Replace the existing formData state initialization to include separate hour and minute fields:
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [formData, setFormData] = useState({
-    title: "", // Added title field for driver's title (Mr, Mrs, Miss, Ms)
+    title: "",
     firstName: "",
     middleName: "",
     lastName: "",
@@ -186,254 +230,81 @@ export default function GetQuotePage() {
     modifications: [] as string[],
   })
 
-  const [vehicle, setVehicle] = useState(null)
-  const [addresses, setAddresses] = useState([])
+  const [vehicle, setVehicle] = useState<(typeof vehicleData)[keyof typeof vehicleData] | null>(null)
+  const [addresses, setAddresses] = useState<string[]>([])
   const [showAddresses, setShowAddresses] = useState(false)
-  const [showQuote, setShowQuote] = useState(false)
-  const [quote, setQuote] = useState(null)
-  const { ExpirationDialog } = useQuoteExpiration(quote);
+  const [filteredOccupations, setFilteredOccupations] = useState(occupations)
+  const [showOccupationDropdown, setShowOccupationDropdown] = useState(false)
+  const [quote, setQuote] = useState<any>(null) // Use a more specific type if available
   const [isCalculating, setIsCalculating] = useState(false)
-  const [isPostcodeLoading, setIsPostcodeLoading] = useState(false)
   const [postcodeError, setPostcodeError] = useState("")
   const [showReview, setShowReview] = useState(false)
   const [ageError, setAgeError] = useState("")
-  const { isAuthenticated, user } = useAuth()
-  const { toast } = useToast()
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
-  const [isLoginCompleted, setIsLoginCompleted] = useState(false)
   const [promoCode, setPromoCode] = useState("")
-  const [appliedPromo, setAppliedPromo] = useState(null)
-  const [discountAmount, setDiscountAmount] = useState(0)
-  const [isApplyingPromo, setIsApplyingPromo] = useState(false)
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [termsAccepted, setTermsAccepted] = useState(false)
-  const [accuracyConfirmed, setAccuracyConfirmed] = useState(false)
-  const [email, setEmail] = useState("")
-  const [showSummary, setShowSummary] = useState(false)
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiryMonth: "",
-    expiryYear: "",
-    cvv: "",
-  })
-  const [billingDetails, setBillingDetails] = useState({
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    postcode: "",
-    country: "United Kingdom",
-  })
-  const [sameBillingAddress, setSameBillingAddress] = useState(true)
-  const [reviewStartTime, setReviewStartTime] = useState(null);
-  const [reviewExpiryTime, setReviewExpiryTime] = useState(null);
-  const [quoteSettings, setQuoteSettings] = useState(null);
-  // 1. Add a new state for showing time selection:
   const [showTimeSelection, setShowTimeSelection] = useState(false)
-  const [filteredOccupations, setFilteredOccupations] = useState(occupation_list.map(o => o.desc))
-  const [showOccupationDropdown, setShowOccupationDropdown] = useState(false)
   const [occupationSearch, setOccupationSearch] = useState("")
-  const occupationInputRef = useRef<HTMLInputElement>(null)
+  const [showQuote, setShowQuote] = useState(false)
   const [customModifications, setCustomModifications] = useState<Record<string, string>>({})
   const [showOtherInput, setShowOtherInput] = useState<Record<string, boolean>>({})
 
+  // Promo code states
+  const [promoApplied, setPromoApplied] = useState(false)
+  const [discount, setDiscount] = useState(0)
+  const [promoError, setPromoError] = useState("")
+  const [basePrice, setBasePrice] = useState(0)
+  const [finalPrice, setFinalPrice] = useState(0)
 
   useEffect(() => {
-    const fetchQuoteSettings = async () => {
-      try {
-        const response = await fetch('/api/quote-settings');
-        const data = await response.json();
-        if (data.success) {
-          setQuoteSettings(data.quoteFormula);
-        }
-      } catch (error) {
-        console.error("Failed to fetch quote settings:", error);
-      }
-    };
-
-    fetchQuoteSettings();
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated && isLoginCompleted) {
-      if (sessionStorage.getItem("pendingPayment") === "true") {
-        sessionStorage.removeItem("pendingPayment")
-        proceedToPaymentLogic()
-      }
-      setIsLoginCompleted(false)
+    if (registrationFromHome && vehicleData[registrationFromHome]) {
+      setVehicle(vehicleData[registrationFromHome])
     }
-  }, [isAuthenticated, isLoginCompleted, quote])
+  }, [registrationFromHome])
 
-  useEffect(() => {
-    if (registrationFromHome) {
-      const fetchVehicleData = async () => {
-        try {
-          const response = await fetch('/api/check-vehicle', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ registration: registrationFromHome }),
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setVehicle(data);
-          } else {
-            console.error("Failed to fetch vehicle data on get-quote page, redirecting to home.");
-            router.push("/");
-          }
-        } catch (error) {
-          console.error("Error fetching vehicle data on get-quote page:", error);
-          router.push("/");
-        }
-      };
-      fetchVehicleData();
-    }
-  }, [registrationFromHome, router]);
-
-  useEffect(() => {
-    const view = searchParams.get('view');
-    if (view === 'review') {
-      const storedData = localStorage.getItem("quoteRestorationData");
-      if (storedData) {
-        try {
-          const { formData, quote, appliedPromo, discountAmount, reviewStartTime, reviewExpiryTime } = JSON.parse(storedData);
-          
-          setFormData(formData);
-          setQuote(quote);
-          setAppliedPromo(appliedPromo);
-          setDiscountAmount(discountAmount);
-          if (appliedPromo) {
-            setPromoCode(appliedPromo.promoCode);
-          }
-          setReviewStartTime(reviewStartTime);
-          setReviewExpiryTime(reviewExpiryTime);
-          
-          // Repopulate custom modifications from the restored modifications list
-          const restoredCustomMods: Record<string, string> = {};
-          const restoredShowOther: Record<string, boolean> = {};
-          formData.modifications.forEach((mod: string) => {
-            if (mod.includes(" - Other: ")) {
-              const parts = mod.split(" - Other: ");
-              const category = parts[0];
-              const value = parts[1];
-              if (category && value) {
-                restoredCustomMods[category] = value;
-                restoredShowOther[category] = true;
-              }
-            }
-          });
-          setCustomModifications(restoredCustomMods);
-          setShowOtherInput(restoredShowOther);
-
-          setShowReview(true);
-
-          const reg = searchParams.get('reg');
-          router.replace(`/get-quote?reg=${reg}`, undefined, { shallow: true });
-          localStorage.removeItem("quoteRestorationData");
-        } catch (e) {
-          console.error("Failed to restore quote state from localStorage", e);
-          router.push('/');
-        }
-      }
-    }
-  }, [searchParams, router]);
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    // Special handling for phone number field
+  const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
     if (field === "phoneNumber" && typeof value === "string") {
-      // Only allow digits
       const digitsOnly = value.replace(/\D/g, "")
-
-      // If empty, allow it
       if (digitsOnly === "") {
-        setFormData((prev) => ({
-          ...prev,
-          [field]: "",
-        }))
+        setFormData((prev) => ({ ...prev, [field]: "" }))
         return
       }
-
-      // Check if it starts with valid UK prefix (07 or 447)
       const isValidStart = digitsOnly.startsWith("07") || digitsOnly.startsWith("447")
-
-      // Limit to 11 digits for UK numbers (e.g., 07123456789)
       const limitedValue = digitsOnly.slice(0, 11)
-
-      // Only update if valid start or if user is still typing the prefix
       if (isValidStart || (digitsOnly.length <= 3 && ("07".startsWith(digitsOnly) || "447".startsWith(digitsOnly)))) {
-        setFormData((prev) => ({
-          ...prev,
-          [field]: limitedValue,
-        }))
+        setFormData((prev) => ({ ...prev, [field]: limitedValue }))
       }
       return
     }
 
     let processedValue = value
-
-    if (field === "firstName" || field === "lastName") {
-      const lettersOnly = value.replace(/[^A-Za-z]/g, "")
-      processedValue = lettersOnly
-    }
-
     if (field === "occupation") {
-      const lettersAndSpacesOnly = value.replace(/[^A-Za-z\s]/g, "")
-      processedValue = lettersAndSpacesOnly
+      processedValue = value.toString().replace(/[^A-Za-z\s]/g, "")
     }
 
-    if (field === "occupation") {
-      setOccupationSearch(value as string);
-    }
-
-    // 3. Update the handleInputChange function to handle startDate changes:
-    // 3. Update the handleInputChange function to handle hour and minute changes:
     if (field === "startHour") {
-      setFormData((prev) => ({
-        ...prev,
-        startHour: value as string,
-        startMinute: "", // Reset minute when hour changes
-        startTime: "", // Reset combined time
-      }))
+      setFormData((prev) => ({ ...prev, startHour: value as string, startMinute: "", startTime: "" }))
       return
     }
 
     if (field === "startMinute") {
       const combinedTime = `${formData.startHour}:${value as string}`
-      setFormData((prev) => ({
-        ...prev,
-        startMinute: value as string,
-        startTime: combinedTime,
-      }))
+      setFormData((prev) => ({ ...prev, startMinute: value as string, startTime: combinedTime }))
       return
     }
 
     if (field === "startDate") {
       setShowTimeSelection(value !== "Immediate Start")
       if (value === "Immediate Start") {
-        setFormData((prev) => ({
-          ...prev,
-          [field]: value,
-          startTime: "",
-          startHour: "",
-          startMinute: "",
-        }))
+        setFormData((prev) => ({ ...prev, [field]: value, startTime: "", startHour: "", startMinute: "" }))
       } else {
-        setFormData((prev) => ({
-          ...prev,
-          [field]: value,
-        }))
+        setFormData((prev) => ({ ...prev, [field]: value }))
       }
       return
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [field]: processedValue,
-    }))
+    setFormData((prev) => ({ ...prev, [field]: processedValue }))
 
-    // Filter occupations when typing in occupation field
     if (field === "occupation") {
-      const filtered = occupation_list.filter((job) => job.desc.toLowerCase().includes(value.toString().toLowerCase())).map(o => o.desc);
+      const filtered = occupations.filter((job) => job.toLowerCase().includes(value.toString().toLowerCase()))
       setFilteredOccupations(filtered)
       setShowOccupationDropdown(true)
     }
@@ -443,234 +314,216 @@ export default function GetQuotePage() {
     setFormData((prev) => {
       const isSelected = prev.modifications.includes(modification)
       if (isSelected) {
-        return {
-          ...prev,
-          modifications: prev.modifications.filter((m) => m !== modification),
-        }
+        return { ...prev, modifications: prev.modifications.filter((m) => m !== modification) }
       } else {
-        return {
-          ...prev,
-          modifications: [...prev.modifications, modification],
-        }
+        return { ...prev, modifications: [...prev.modifications, modification] }
       }
     })
   }
 
   const handleOtherToggle = (category: string) => {
-    setShowOtherInput((prev) => ({
-      ...prev,
-      [category]: !prev[category],
-    }))
-
-    // If unchecking, remove the custom modification
+    setShowOtherInput((prev) => ({ ...prev, [category]: !prev[category] }))
     if (showOtherInput[category]) {
       const customModKey = `${category} - Other: ${customModifications[category]}`
-      setFormData((prev) => ({
-        ...prev,
-        modifications: prev.modifications.filter((m) => m !== customModKey),
-      }))
-      setCustomModifications((prev) => ({
-        ...prev,
-        [category]: "",
-      }))
-    }
-  }
-
-  const handleCardDetailsChange = (field: string, value: string) => {
-    let processedValue = value
-
-    if (field === "cardNumber") {
-      // Only allow digits and format with spaces
-      const digitsOnly = value.replace(/\D/g, "")
-      // Format with spaces every 4 digits
-      processedValue = digitsOnly
-        .replace(/(\d{4})/g, "$1 ")
-        .trim()
-        .slice(0, 19) // Limit to 16 digits + 3 spaces
-    }
-
-    if (field === "cardName") {
-      // Only allow letters and spaces
-      processedValue = value.replace(/[^A-Za-z\s]/g, "")
-    }
-
-    if (field === "expiryMonth" || field === "expiryYear" || field === "cvv") {
-      // Only allow digits
-      processedValue = value.replace(/\D/g, "")
-
-      // Limit CVV to 3 or 4 digits
-      if (field === "cvv") {
-        processedValue = processedValue.slice(0, 4)
-      }
-    }
-
-    setCardDetails((prev) => ({
-      ...prev,
-      [field]: processedValue,
-    }))
-  }
-
-  const handleBillingDetailsChange = (field: string, value: string) => {
-    setBillingDetails((prev) => ({
-      ...prev,
-      [field]: value,
-    }))
-  }
-
-  const handlePostcodeLookup = async () => {
-    // Reset any previous errors
-    setPostcodeError("")
-
-    // Check if postcode is empty
-    if (!formData.postcode.trim()) {
-      setPostcodeError("Please enter a postcode before searching")
-      return
-    }
-
-    setIsPostcodeLoading(true)
-
-    try {
-      const response = await fetch(`/api/postcode-lookup?postcode=${encodeURIComponent(formData.postcode)}`);
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.addresses && data.addresses.length > 0) {
-          setAddresses(data.addresses);
-          setShowAddresses(true);
-        } else {
-          setPostcodeError("Address not found. Please enter your address manually below.");
-          setAddresses([]);
-          setShowAddresses(false);
-        }
-      } else {
-        setPostcodeError("Address not found. Please enter your address manually below.");
-        setShowAddresses(false);
-      }
-    } catch (error) {
-      console.error("An error occurred during postcode lookup", error);
-      setPostcodeError("Address not found. Please enter your address manually below.");
-      setShowAddresses(false);
-    } finally {
-      setIsPostcodeLoading(false)
-      setFormData(prev => ({
-        ...prev,
-        address: ""
-      }));
+      setFormData((prev) => ({ ...prev, modifications: prev.modifications.filter((m) => m !== customModKey) }))
+      setCustomModifications((prev) => ({ ...prev, [category]: "" }))
     }
   }
 
   const handleCustomModificationChange = (category: string, value: string) => {
-    const oldCustomValue = customModifications[category] || "";
-    
-    setCustomModifications((prev) => ({
-      ...prev,
-      [category]: value,
-    }));
-
+    setCustomModifications((prev) => ({ ...prev, [category]: value }))
+    const oldCustomModKey = `${category} - Other: ${customModifications[category]}`
+    const newCustomModKey = `${category} - Other: ${value}`
     setFormData((prev) => {
-      // Remove the old custom modification string if it exists
-      const oldCustomModKey = `${category} - Other: ${oldCustomValue}`;
-      const filteredMods = prev.modifications.filter((m) => m !== oldCustomModKey);
+      const filtered = prev.modifications.filter((m) => m !== oldCustomModKey)
+      return { ...prev, modifications: value.trim() ? [...filtered, newCustomModKey] : filtered }
+    })
+  }
 
-      // Add the new custom modification string if the value is not empty
-      const newCustomModKey = `${category} - Other: ${value}`;
-      const newMods = value.trim() ? [...filteredMods, newCustomModKey] : filteredMods;
-      
-      return { ...prev, modifications: newMods };
-    });
-  };
-// ...
+  const handlePostcodeLookup = () => {
+    setPostcodeError("")
+    if (!formData.postcode.trim()) {
+      setPostcodeError("Please enter a postcode before searching")
+      return
+    }
+    const formattedPostcode = formData.postcode.toUpperCase().replace(/\s/g, "")
+    if (formattedPostcode === "HA35RQ") {
+      setAddresses(addressData[formattedPostcode])
+      setShowAddresses(true)
+      setPostcodeError("")
+    } else {
+      setAddresses([])
+      setShowAddresses(false)
+      setPostcodeError("Address not found. Please enter your address manually below.")
+      setFormData((prev) => ({ ...prev, address: "" }))
+    }
+  }
 
   const calculateQuote = () => {
-    if (!quoteSettings) return null;
-
-    const calculatedQuote = calculateQuoteCommon(quoteSettings, formData);
-
-    let startTime: Date;
-    if (formData.startDate === "Immediate Start") {
-      startTime = getNext5MinuteTime();
-    } else {
-      // Parse the selected date from formData.startDate
-      const dateParts = formData.startDate.split(', ')[1].split(' ');
-      const day = parseInt(dateParts[0]);
-      const monthName = dateParts[1];
-      const year = new Date().getFullYear(); // Assuming current year for simplicity, adjust if year selection is added
-
-      const monthNames = ["January", "February", "March", "April", "May", "June",
-                          "July", "August", "September", "October", "November", "December"];
-      const month = monthNames.indexOf(monthName);
-
-      startTime = new Date(year, month, day);
-      startTime.setHours(parseInt(formData.startHour));
-      startTime.setMinutes(parseInt(formData.startMinute));
-      startTime.setSeconds(0);
-      startTime.setMilliseconds(0);
+    const basePriceRaw = 15.0
+    const durationValue = Number.parseInt(formData.duration.split(" ")[0])
+    let durationMultiplier = 1
+    if (formData.durationType === "Hours") {
+      durationMultiplier = durationValue * 0.8
+    } else if (formData.durationType === "Days") {
+      durationMultiplier = durationValue * 1.2
+    } else if (formData.durationType === "Weeks") {
+      durationMultiplier = durationValue * 5.5
     }
-    
-    const expiryTime = new Date(startTime);
 
-    // Add duration
+    const currentYear = new Date().getFullYear()
+    const birthYear = Number.parseInt(formData.dateOfBirthYear)
+    const age = currentYear - birthYear
+    let ageFactor = 1.0
+    if (age < 25) {
+      ageFactor = 1.8
+    } else if (age < 30) {
+      ageFactor = 1.4
+    } else if (age < 50) {
+      ageFactor = 1.0
+    } else {
+      ageFactor = 1.1
+    }
+
+    let licenseFactor = 1.0
+    switch (formData.licenseHeld) {
+      case "Under 1 Year":
+        licenseFactor = 2.0
+        break
+      case "1-2 Years":
+        licenseFactor = 1.6
+        break
+      case "2-4 Years":
+        licenseFactor = 1.2
+        break
+      case "5-10 Years":
+        licenseFactor = 1.0
+        break
+      case "10+ Years":
+        licenseFactor = 0.9
+        break
+    }
+
+    let vehicleValueFactor = 1.0
+    switch (formData.vehicleValue) {
+      case "£1,000 - £5,000":
+        vehicleValueFactor = 0.8
+        break
+      case "£5,000 - £10,000":
+        vehicleValueFactor = 1.0
+        break
+      case "£10,000 - £20,000":
+        vehicleValueFactor = 1.2
+        break
+      case "£20,000 - £30,000":
+        vehicleValueFactor = 1.4
+        break
+      case "£30,000 - £50,000":
+        vehicleValueFactor = 1.8
+        break
+      case "£50,000 - £80,000":
+        vehicleValueFactor = 2.2
+        break
+      case "£80,000+":
+        vehicleValueFactor = 3.0
+        break
+    }
+
+    let reasonFactor = 1.0
+    switch (formData.reason) {
+      case "Borrowing":
+        reasonFactor = 1.1
+        break
+      case "Buying/Selling/Testing":
+        reasonFactor = 0.9
+        break
+      case "Learning":
+        reasonFactor = 1.5
+        break
+      case "Maintenance":
+        reasonFactor = 0.8
+        break
+      case "Other":
+        reasonFactor = 1.2
+        break
+    }
+
+    const subtotal = basePriceRaw * durationMultiplier * ageFactor * licenseFactor * vehicleValueFactor * reasonFactor
+    const insurancePremiumTax = subtotal * 0.12
+    let total = subtotal + insurancePremiumTax
+
+    // Apply promo discount if active
+    if (promoApplied && discount > 0) {
+      total = total * (1 - discount / 100)
+    }
+
+    // Ensure minimum price
+    total = Math.max(total, 8.5)
+
+    const startTime = getNext5MinuteTime()
+    const expiryTime = new Date(startTime)
     const durationVal = Number.parseInt(formData.duration.split(" ")[0])
     if (formData.durationType === "Hours") {
       expiryTime.setHours(expiryTime.getHours() + durationVal)
     } else if (formData.durationType === "Days") {
       expiryTime.setDate(expiryTime.getDate() + durationVal)
     } else {
-      // Weeks
       expiryTime.setDate(expiryTime.getDate() + durationVal * 7)
     }
 
+    // Update state for promo code calculations
+    setBasePrice(
+      basePriceRaw * durationMultiplier * ageFactor * licenseFactor * vehicleValueFactor * reasonFactor +
+        insurancePremiumTax,
+    ) // Price before discount
+    setFinalPrice(total)
+
     return {
-        ...calculatedQuote,
-        startTime: formatDateTime(startTime),
-        expiryTime: formatDateTime(expiryTime),
+      basePrice: basePriceRaw, // This seems to be the initial base price before multipliers
+      durationMultiplier,
+      ageFactor,
+      licenseFactor,
+      vehicleValueFactor,
+      reasonFactor,
+      subtotal, // Subtotal before IPT and promo discount
+      insurancePremiumTax,
+      total: total,
+      breakdown: {
+        age,
+        duration: `${durationValue} ${formData.durationType.toLowerCase()}`,
+        licenseExperience: formData.licenseHeld,
+        vehicleValue: formData.vehicleValue,
+        reason: formData.reason,
+      },
+      startTime: formatDateTime(startTime),
+      expiryTime: formatDateTime(expiryTime),
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!formData.occupation) {
-      toast({
-        variant: "destructive",
-        title: "Occupation is required",
-        description: "Please select your occupation.",
-      });
-      return;
-    }
-
-    const calculatedQuote = calculateQuote();
-    setQuote(calculatedQuote);
-    localStorage.setItem('quoteCreationTimestamp', Date.now().toString());
-
-    setReviewStartTime(calculatedQuote.startTime);
-    setReviewExpiryTime(calculatedQuote.expiryTime);
-
+    // Calculate quote price before showing review
+    const calculatedQuote = calculateQuote()
     setShowReview(true)
-    // Scroll to top on mobile
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   const handleNewQuote = () => {
     setShowQuote(false)
     setQuote(null)
-    // Scroll to top of form
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   const selectOccupation = (occupation: string) => {
     handleInputChange("occupation", occupation)
     setShowOccupationDropdown(false)
-    setOccupationSearch(occupation) // Update search term as well
+    setOccupationSearch(occupation)
   }
 
   const handleDurationTypeChange = (type: string) => {
     setFormData((prev) => {
-      // Reset duration based on type
       let newDuration = ""
       let showDropdown = prev.showDurationDropdown
-
       if (type === "Hours") {
         newDuration = "1 hour"
         showDropdown = false
@@ -681,136 +534,81 @@ export default function GetQuotePage() {
         newDuration = "1 week"
         showDropdown = false
       }
-
-      return {
-        ...prev,
-        durationType: type,
-        duration: newDuration,
-        showDurationDropdown: showDropdown,
-      }
+      return { ...prev, durationType: type, duration: newDuration, showDurationDropdown: showDropdown }
     })
   }
 
   const handleDurationChange = (duration: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      duration: duration,
-    }))
+    setFormData((prev) => ({ ...prev, duration: duration }))
   }
 
   const handleOtherDurationClick = () => {
-    setFormData((prev) => ({
-      ...prev,
-      showDurationDropdown: true,
-    }))
+    setFormData((prev) => ({ ...prev, showDurationDropdown: true }))
   }
 
   const generateDateOptions = () => {
     const options = ["Immediate Start"]
     const today = new Date()
-
     for (let i = 0; i < 28; i++) {
       const date = new Date(today)
       date.setDate(today.getDate() + i)
-
       let dayName = ""
       if (i === 0) dayName = "Today"
       else if (i === 1) dayName = "Tomorrow"
       else dayName = date.toLocaleDateString("en-GB", { weekday: "long" })
-
-      const dateStr = date.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-      })
-
+      const dateStr = date.toLocaleDateString("en-GB", { day: "numeric", month: "long" })
       options.push(`${dayName}, ${dateStr}`)
     }
-
     return options
   }
 
-  // Generate hour options for dropdown (1-23 hours)
-  const hourOptions = Array.from({ length: 23 }, (_, i) => `${i + 1} ${i === 0 ? "hour" : "hours"}`)
+  const hourOptions = Array.from({ length: 24 }, (_, i) => {
+    const hour = i < 10 ? `0${i}` : `${i}`
+    return `${hour}:00`
+  })
+  const minuteOptions = Array.from({ length: 12 }, (_, i) => {
+    const minute = i * 5
+    return minute.toString().padStart(2, "0")
+  })
 
-  // Generate day options for dropdown (1-28 days)
-  const dayOptions = Array.from({ length: 28 }, (_, i) => `${i + 1} ${i === 0 ? "day" : "days"}`)
-
-  // Generate week options for dropdown (1-4 weeks)
-  const weekOptions = Array.from({ length: 4 }, (_, i) => `${i + 1} ${i === 0 ? "week" : "weeks"}`)
-
-  // Get the appropriate options based on duration type
   const getDurationOptions = () => {
     if (formData.durationType === "Hours") {
-      return hourOptions
+      return Array.from({ length: 23 }, (_, i) => `${i + 1} ${i === 0 ? "hour" : "hours"}`)
     } else if (formData.durationType === "Days") {
-      return dayOptions
+      return Array.from({ length: 28 }, (_, i) => `${i + 1} ${i === 0 ? "day" : "days"}`)
     } else {
-      return weekOptions
+      return Array.from({ length: 4 }, (_, i) => `${i + 1} ${i === 0 ? "week" : "weeks"}`)
     }
   }
 
-  // 2. Add a function to generate time options in 5-minute increments:
-  const generateTimeOptions = () => {
-    const options = []
-    const now = new Date()
-    const currentHour = now.getHours()
-    const currentMinute = now.getMinutes()
-
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 5) {
-        // Skip past times for today
-        if (
-          formData.startDate.includes("Today") &&
-          (hour < currentHour || (hour === currentHour && minute <= currentMinute))
-        ) {
-          continue
-        }
-
-        const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
-        options.push(timeString)
-      }
-    }
-
-    return options
-  }
-
-  // 2. Add a function to generate available minutes based on selected hour:
   const generateMinuteOptions = (selectedHour: string) => {
-    const options = []
+    const options: string[] = []
     const now = new Date()
     const currentHour = now.getHours()
     const currentMinute = now.getMinutes()
     const hourNum = Number.parseInt(selectedHour)
 
     for (let minute = 0; minute < 60; minute += 5) {
-      // Skip past minutes for today if it's the current hour
-      if (formData.startDate.includes("Today") && hourNum === currentHour && minute <= currentMinute) {
+      const minuteString = minute.toString().padStart(2, "0")
+      if (formData.startDate.includes("Today") && hourNum === currentHour && minute < currentMinute) {
         continue
       }
-
-      const minuteString = minute.toString().padStart(2, "0")
       options.push(minuteString)
     }
-
     return options
   }
 
-  // In the generateHourOptions function, update it to return just the hour numbers without ":00":
   const generateHourOptions = () => {
-    const options = []
+    const options: string[] = []
     const now = new Date()
     const currentHour = now.getHours()
-
     for (let hour = 0; hour < 24; hour++) {
-      // Skip past hours for today
+      const hourString = hour.toString().padStart(2, "0")
       if (formData.startDate.includes("Today") && hour < currentHour) {
         continue
       }
-
-      const hourString = hour.toString().padStart(2, "0")
       options.push(hourString)
     }
-
     return options
   }
 
@@ -821,276 +619,65 @@ export default function GetQuotePage() {
         setShowOccupationDropdown(false)
       }
     }
-
     if (showOccupationDropdown) {
       document.addEventListener("mousedown", handleClickOutside)
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [showOccupationDropdown])
-  const hasActivePromo = Boolean(appliedPromo)
-  const finalQuoteTotal = quote ? Math.max(0, quote.total - (hasActivePromo ? discountAmount : 0)) : 0
 
   const handleChangeDetails = () => {
     setShowReview(false)
-    // Scroll to top of form
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  const proceedToPaymentLogic = async () => {
+  const handleProceedToPayment = () => {
     setIsCalculating(true)
-
-    const calculatedQuote = calculateQuote()
-    const finalTotal = calculatedQuote.total - discountAmount
-
-    // Gather data for blacklist check
-    const cleanReg = registrationFromHome?.replace(/\s+/g, "").toUpperCase();
-    const dob = `${formData.dateOfBirthDay}/${formData.dateOfBirthMonth}/${formData.dateOfBirthYear}`;
-
-    try {
-      // Get client IP for blacklist check
-      const ipResponse = await fetch("/api/get-client-ip")
-      const { ip } = await ipResponse.json()
-
-      // Perform comprehensive blacklist check
-      const blacklistCheckResponse = await fetch('/api/blacklist-check', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          regNumber: cleanReg,
-          ipAddress: ip,
-          postcode: formData.postcode,
+    setTimeout(() => {
+      const calculatedQuote = calculateQuote()
+      const quoteDataForCheckout = {
+        total: calculatedQuote.total,
+        startTime: calculatedQuote.startTime,
+        expiryTime: calculatedQuote.expiryTime,
+        breakdown: { duration: calculatedQuote.breakdown.duration, reason: calculatedQuote.breakdown.reason },
+        customerData: {
           firstName: formData.firstName,
+          middleName: formData.middleName,
           lastName: formData.lastName,
-          dateOfBirth: dob,
-          email: user?.email, // Include email if user is logged in
-        }),
-      });
-      const blacklistResult = await blacklistCheckResponse.json();
-
-      if (blacklistResult.isBlacklisted) {
-        toast({ variant: "destructive", title: "Access Restricted", description: blacklistResult.reason || "Your access has been restricted. Please contact support for assistance." });
-        setIsCalculating(false);
-        return;
-      }
-    } catch (error) {
-      console.error("Failed to perform blacklist check:", error);
-      toast({ variant: "destructive", title: "Service Unavailable", description: "Could not perform blacklist check at this time. Please try again later." });
-      setIsCalculating(false);
-      return;
-    }
-
-    const quoteDataForCheckout = {
-      userId: user.id,
-      total: finalTotal,
-      originalTotal: calculatedQuote.total,
-      cpw: calculatedQuote.total.toFixed(2),
-      update_price: finalTotal.toFixed(2),
-      discountAmount: discountAmount,
-      promoCode: appliedPromo ? appliedPromo.promoCode : undefined,
-      startTime: calculatedQuote.startTime,
-      expiryTime: calculatedQuote.expiryTime,
-      vehicleModifications: formData.modifications,
-      nameTitle: formData.title,
-      
-      breakdown: {
-        duration: calculatedQuote.breakdown.duration,
-        reason: formData.reason,
-      },
-      customerData: {
-        firstName: formData.firstName,
-        middleName: formData.middleName,
-        title: formData.title,
-        lastName: formData.lastName,
-        dateOfBirth: `${formData.dateOfBirthDay}/${formData.dateOfBirthMonth}/${formData.dateOfBirthYear}`,
-        phoneNumber: formData.phoneNumber,
-        occupation: formData.occupation,
-        address: formData.address,
-        licenseType: formData.licenseType,
-        licenseHeld: formData.licenseHeld,
-        vehicleValue: formData.vehicleValue,
-        reason: formData.reason,
-        duration: formData.duration,
-                  registration: registrationFromHome || "",
-                  post_code: formData.postcode,
-                  vehicle: {
-                    make: vehicle?.make || "",
-                    model: vehicle?.model || "",
-                    year: vehicle?.year && vehicle.year !== "Unknown" ? vehicle.year : "",
-                    engineCC: "1400", // You can add this to vehicle data if needed
-                  },      },
-    }
-
-    try {
-      const response = await fetch("/api/quotes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ quoteData: quoteDataForCheckout }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create quote")
-      }
-
-      const newQuote = await response.json()
-
-      // Manually inject the correct total into the object before storing.
-      const parsedQuoteData = JSON.parse(newQuote.quoteData);
-      parsedQuoteData.total = finalTotal;
-      if (appliedPromo) {
-        parsedQuoteData.promoCode = appliedPromo.promoCode;
-        parsedQuoteData.discountAmount = discountAmount;
-        parsedQuoteData.originalTotal = calculatedQuote.total;
-      }
-      newQuote.quoteData = JSON.stringify(parsedQuoteData);
-
-      // Save data for restoration if user navigates back
-      const restorationData = {
-        formData,
-        quote,
-        appliedPromo,
-        discountAmount,
-        reviewStartTime,
-        reviewExpiryTime,
-      };
-      localStorage.setItem("quoteRestorationData", JSON.stringify(restorationData));
-
-      // Save quote data to localStorage
-      localStorage.setItem("quoteData", JSON.stringify(newQuote))
-
-      // Redirect to checkout page
-      router.push("/quote-checkout")
-    } catch (error) {
-      console.error("Error proceeding to payment:", error)
-      toast({ variant: "destructive", title: "Error", description: "Could not proceed to payment. Please try again." })
-    } finally {
-      setIsCalculating(false)
-    }
-  }
-
-  const handleProceedToPayment = async () => {
-    if (!isAuthenticated) {
-      sessionStorage.setItem("pendingPayment", "true")
-      setIsAuthDialogOpen(true)
-      return
-    }
-    await proceedToPaymentLogic()
-  }
-
-  const calculateDiscountedTotal = (total: number, promo: any) => {
-    let discountAmount = 0
-    if (promo.discount.type === "percentage") {
-      discountAmount = total * (promo.discount.value / 100)
-    } else if (promo.discount.type === "fixed") {
-      discountAmount = promo.discount.value
-    }
-    if (promo.maxDiscount) {
-      discountAmount = Math.min(discountAmount, parseFloat(promo.maxDiscount))
-    }
-    return discountAmount
-  }
-
-  const handleApplyPromo = async () => {
-    const enteredCode = promoCode.trim()
-    if (!enteredCode || !quote) return
-    setIsApplyingPromo(true)
-    toast({ title: "Processing", description: "Checking promo code..." })
-    try {
-      const response = await fetch("/api/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          promoCode: enteredCode,
-          total: quote.total,
-          context: {
-            lastName: formData.lastName,
-            dateOfBirth: `${formData.dateOfBirthYear}-${formData.dateOfBirthMonth.padStart(2, "0")}-${formData.dateOfBirthDay.padStart(2, "0")}`,
-            registration: registrationFromHome,
+          dateOfBirth: `${formData.dateOfBirthDay}/${formData.dateOfBirthMonth}/${formData.dateOfBirthYear}`,
+          phoneNumber: formData.phoneNumber,
+          occupation: formData.occupation,
+          address: formData.address,
+          licenseType: formData.licenseType,
+          licenseHeld: formData.licenseHeld,
+          vehicleValue: formData.vehicleValue,
+          reason: formData.reason,
+          duration: formData.duration,
+          registration: registrationFromHome,
+          vehicle: {
+            make: vehicle?.make || "Unknown",
+            model: vehicle?.model || "Unknown",
+            year: vehicle?.year || "Unknown",
+            engineCC: "1400",
           },
-        }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || "Failed to validate promo code")
-
-      const coupon = data
-      if (typeof coupon.discount === "string") {
-        coupon.discount = JSON.parse(coupon.discount)
+        },
       }
-
-      const discount = calculateDiscountedTotal(quote.total, coupon)
-      setDiscountAmount(discount)
-      setAppliedPromo(coupon)
-
-      toast({ title: "Promo Code Applied", description: `Successfully applied promo code ${data.promoCode}` })
-    } catch (error: any) {
-      setAppliedPromo(null)
-      setDiscountAmount(0)
-      toast({ variant: "destructive", title: "Invalid Code", description: error.message || "The promo code is invalid or expired" })
-    } finally {
-      setIsApplyingPromo(false)
-    }
+      localStorage.setItem("quoteData", JSON.stringify(quoteDataForCheckout))
+      setIsCalculating(false)
+      window.location.href = "/coverise/checkout"
+    }, 2000)
   }
 
-  const handleRemovePromo = () => {
-    setAppliedPromo(null)
-    setDiscountAmount(0)
-    setPromoCode("")
-    toast({ title: "Promo Removed", description: "You can try another code." })
-  }
-
-  const handleTogglePassword = () => {
-    setShowPassword(!showPassword)
-  }
-
-  const handlePurchase = () => {
-    if (!termsAccepted || !accuracyConfirmed) {
-      alert("Please accept the terms and confirm the accuracy of your information.")
-      return
-    }
-
-    // Validate card details
-    if (
-      !cardDetails.cardNumber ||
-      !cardDetails.cardName ||
-      !cardDetails.expiryMonth ||
-      !cardDetails.expiryYear ||
-      !cardDetails.cvv
-    ) {
-      alert("Please fill in all card details.")
-      return
-    }
-
-    // Validate billing details if not using same address
-    if (!sameBillingAddress) {
-      if (!billingDetails.addressLine1 || !billingDetails.city || !billingDetails.postcode) {
-        alert("Please fill in all required billing details.")
-        return
-      }
-    }
-
-    alert("Purchase successful! Your covernote will be emailed to you shortly.")
-  }
-
-  const toggleSummary = () => {
-    setShowSummary(!showSummary)
-  }
-
-  // Function to validate age
   const validateAge = (day: string, month: string, year: string) => {
     if (day && month && year) {
       const birthDate = new Date(`${year}-${month}-${day}`)
       const today = new Date()
       let age = today.getFullYear() - birthDate.getFullYear()
       const monthDiff = today.getMonth() - birthDate.getMonth()
-
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--
       }
-
       if (age < 17) {
         setAgeError("You must be at least 17 years old to get a quote.")
       } else {
@@ -1099,11 +686,38 @@ export default function GetQuotePage() {
     }
   }
 
-  const monthInputRef = useRef<HTMLInputElement>(null);
-  const yearInputRef = useRef<HTMLInputElement>(null);
+  const handleApplyPromo = () => {
+    if (!promoCode.trim()) {
+      setPromoError("Please enter a promo code.")
+      setPromoApplied(false)
+      setDiscount(0)
+      setFinalPrice(basePrice) // Reset to base price if promo is invalid
+      return
+    }
+    // Mock promo code logic
+    if (promoCode.toUpperCase() === "SAVE10") {
+      setDiscount(10)
+      setPromoApplied(true)
+      setPromoError("")
+      // Recalculate price with discount
+      const currentPrice = calculateQuote().total
+      setFinalPrice(currentPrice * (1 - 10 / 100))
+    } else {
+      setPromoError("Invalid promo code. Please try again.")
+      setPromoApplied(false)
+      setDiscount(0)
+      setFinalPrice(basePrice) // Reset to base price if promo is invalid
+    }
+  }
 
-  // If redirecting, show loading state
-  if (!isClient || !registrationFromHome) {
+  // Calculate initial base and final prices when component mounts or formData changes
+  useEffect(() => {
+    const quoteData = calculateQuote()
+    setBasePrice(quoteData.total) // Initial price before any promo
+    setFinalPrice(quoteData.total) // Initial price before any promo
+  }, [formData, promoApplied, discount, promoCode]) // Recalculate when relevant state changes
+
+  if (!registrationFromHome) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -1114,11 +728,8 @@ export default function GetQuotePage() {
     )
   }
 
-  
-
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <ExpirationDialog />
       {/* Animated gradient background */}
       <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900 -z-10" />
 
@@ -1135,291 +746,81 @@ export default function GetQuotePage() {
         />
       </div>
 
-      <Header />
+      <header className="bg-black/95 border-b border-cyan-900/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Link href="/coverise" className="flex items-center gap-2">
+              <span className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent tracking-tighter hover:scale-105 transition-transform">
+                COVERISE
+              </span>
+            </Link>
+            <div className="flex items-center gap-4">
+              <Link href="/coverise/contact">
+                <Button variant="ghost" className="text-gray-300 hover:text-cyan-400 hover:bg-gray-900">
+                  Contact
+                </Button>
+              </Link>
+              <Link href="/coverise/login">
+                <Button className="bg-cyan-600 hover:bg-cyan-500 text-white">Sign In</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
 
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="max-w-4xl mx-auto">
-          {!showReview && (
-            <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-800 mb-8">
-                <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white">Get Your Quote</h2>
-                  <p className="text-gray-400">Complete the form to get your instant price</p>
-                </div>
-            </div>
-          )}
-
-
-
-          {!showReview && quote && vehicle && (
-            <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl mb-6 sm:mb-8 border border-gray-800">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-cyan-600/20 rounded-xl flex items-center justify-center shadow-lg">
-                    <Car className="w-7 h-7 text-cyan-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">Vehicle Details</h2>
-                    <p className="text-sm text-gray-400 mt-0.5">Vehicle information</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2 bg-gray-800 px-4 py-2 rounded-full border border-gray-700">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  <span className="text-sm font-semibold text-gray-300">Verified</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
-                <div className="relative">
-                  <div className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Registration</div>
-                  <div className="relative bg-white/10 rounded-md px-4 py-3 border border-gray-700 inline-block shadow-sm">
-                    <div className="font-bold text-white text-xl tracking-widest">{registrationFromHome}</div>
-                  </div>
-                </div>
-                <div className="relative">
-                  <div className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Make</div>
-                  <div className="relative text-xl font-bold text-white uppercase">{vehicle.make}</div>
-                </div>
-                <div className="relative">
-                  <div className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Model</div>
-                  <div className="relative text-xl font-bold text-white uppercase">{vehicle.model}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Quote Display */}
-          {showQuote && quote && (
-            <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-800 mb-6 sm:mb-8">
-              <div className="text-center mb-6 sm:mb-8">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Calculator className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">Your Quote is Ready!</h2>
-                <p className="text-lg text-gray-400">Here's your personalized covernote quote</p>
-              </div>
-
-              {/* Quote Summary */}
-              <div className="bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl p-6 mb-8 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="text-center space-y-2">
-                  {hasActivePromo ? (
-                    <div className="flex flex-col items-center space-y-2 text-white">
-                      <div className="text-sm uppercase tracking-[0.2em] text-white/80">Promo Applied</div>
-                      <div className="flex items-end justify-center gap-3">
-                        <span className="text-3xl font-semibold text-white/70 line-through">
-                          £{quote.total.toFixed(2)}
-                        </span>
-                        <span className="text-5xl sm:text-6xl font-bold text-white">
-                          £{finalQuoteTotal.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="text-sm text-green-100 font-semibold">
-                        You save £{discountAmount.toFixed(2)} with {appliedPromo?.promoCode}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-5xl sm:text-6xl font-bold text-white">£{quote.total.toFixed(2)}</div>
-                  )}
-                  <div className="text-lg text-cyan-100">Total Premium</div>
-                  <div className="text-sm text-white/80 mt-1">
-                    For {quote.breakdown.duration} • {vehicle?.make} {vehicle?.model}
-                  </div>
-                </div>
-              </div>
-
-              {/* Quote Breakdown */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
-                      <Car className="w-5 h-5 text-cyan-400" />
-                    </div>
-                    <span>Coverage Details</span>
-                  </h3>
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 shadow-sm">
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Vehicle:</span>
-                        <span className="font-semibold text-right text-white">
-                          {vehicle?.year} {vehicle?.make} {vehicle?.model}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Registration:</span>
-                        <span className="font-semibold text-white">{registrationFromHome}</span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Duration:</span>
-                        <span className="font-semibold text-white">{quote.breakdown.duration}</span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Start Date:</span>
-                        <span className="font-semibold text-right text-white">{formData.startDate}</span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Reason:</span>
-                        <span className="font-semibold text-right text-white">{quote.breakdown.reason}</span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base">
-                        <span className="text-gray-400 font-medium">Vehicle Value:</span>
-                        <span className="font-semibold text-right text-white">{formData.vehicleValue}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-4 flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-cyan-400" />
-                    </div>
-                    <span>Price Breakdown</span>
-                  </h3>
-                  <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 shadow-sm">
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Base Premium:</span>
-                        <span className="font-semibold text-white">£{quote.basePrice.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Duration Factor:</span>
-                        <span className="font-semibold text-white">×{quote.durationMultiplier.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2">
-                        <span className="text-gray-400 font-medium">Risk Factors:</span>
-                        <span className="font-semibold text-white">Applied</span>
-                      </div>
-                      {hasActivePromo && (
-                        <div className="flex justify-between text-sm sm:text-base border-b border-gray-700 pb-2 text-green-400">
-                          <span className="font-semibold">Promo Savings ({appliedPromo?.promoCode}):</span>
-                          <span className="font-bold">-£{discountAmount.toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="border-t border-gray-600 pt-3 font-bold text-base sm:text-lg text-white">
-                        <div className="flex justify-between">
-                          <span>{hasActivePromo ? "Total After Discount:" : "Total:"}</span>
-                          <span className="text-cyan-400">
-                            £{(hasActivePromo ? finalQuoteTotal : quote.total).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* What's Included */}
-              <div className="bg-gray-800/50 rounded-xl p-6 sm:p-8 mb-8 shadow-sm border border-gray-700">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-cyan-400" />
-                  </div>
-                  <span>What's Included</span>
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    "Third Party Liability Cover",
-                    "Instant Digital Certificate",
-                    "24/7 Claims Support",
-                    "DVLA Compliant",
-                  ].map((item) => (
-                    <div key={item} className="flex items-center space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                      <span className="text-base text-gray-300">{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/quote-checkout" className="flex-1">
-                  <Button className="w-full bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2">
-                    <Download className="w-5 h-5" />
-                    <span>
-                      Buy Now - £{(hasActivePromo ? finalQuoteTotal : quote.total).toFixed(2)}
-                    </span>
-                  </Button>
-                </Link>
-                <Button
-                  onClick={handleNewQuote}
-                  variant="outline"
-                  className="flex-1 py-4 text-lg font-semibold border-2 border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 text-gray-300 bg-transparent"
-                >
-                  Get New Quote
-                </Button>
-              </div>
-            </div>
-          )}
-
           {/* Review Page */}
           {showReview && !showQuote && (
-            <div>
-              <button
-                onClick={handleChangeDetails}
-                className="inline-flex items-center text-cyan-400 hover:text-cyan-500 font-medium mb-6 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Quote
-              </button>
+            <div className="bg-gray-900 rounded-lg p-6 sm:p-8 shadow-sm border border-gray-800">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <CheckCircle className="w-8 h-8 text-white" />
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Review Your Details</h1>
+                <p className="text-gray-400">Please review your information before proceeding</p>
+              </div>
 
-              <div className="bg-gray-900 rounded-lg p-6 sm:p-8 shadow-sm border border-gray-800">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <CheckCircle className="w-8 h-8 text-white" />
+              {/* Stacked Sections */}
+              <div className="space-y-6">
+                {/* Customer Details */}
+                <div className="bg-gray-800/50 rounded-lg p-5 border border-gray-700">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
+                      <User className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Customer Details</h3>
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Review Your Details</h1>
-                  <p className="text-gray-400">Please review your information before proceeding</p>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Full Name:</span>
+                      <span className="font-semibold text-white">
+                        {formData.title} {formData.firstName} {formData.middleName} {formData.lastName}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Date of Birth:</span>
+                      <span className="font-semibold text-white">
+                        {formData.dateOfBirthDay}/{formData.dateOfBirthMonth}/{formData.dateOfBirthYear}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Address:</span>
+                      <span className="font-semibold text-white text-right max-w-[60%]">{formData.address}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">License Type:</span>
+                      <span className="font-semibold text-white">{formData.licenseType || "Full UK"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Occupation:</span>
+                      <span className="font-semibold text-white">{formData.occupation || "N/A"}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-6">
-                  {/* Customer Details */}
-                  <div className="bg-gray-800/50 rounded-lg p-5 border border-gray-700">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
-                        <User className="w-5 h-5 text-cyan-400" />
-                      </div>
-                      <h3 className="text-lg font-bold text-white">Customer Details</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Full Name:</span>
-                        <span className="font-semibold text-white">
-                          {formData.title} {formData.firstName} {formData.middleName} {formData.lastName}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Date of Birth:</span>
-                        <span className="font-semibold text-white">
-                          {formData.dateOfBirthDay}/{formData.dateOfBirthMonth}/{formData.dateOfBirthYear}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Address:</span>
-                        <span className="font-semibold text-white text-right max-w-[60%]">{formData.address}</span>
-                      </div>
-                       <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Phone:</span>
-                        <span className="font-semibold text-white">{formData.phoneNumber}</span>
-                      </div>
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">License Type:</span>
-                        <span className="font-semibold text-white">{formData.licenseType}</span>
-                      </div>
-                       <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">License Held:</span>
-                        <span className="font-semibold text-right text-white">{formData.licenseHeld}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Occupation:</span>
-                        <span className="font-semibold text-white">{formData.occupation}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Vehicle Details */}
+                {vehicle && (
                   <div className="bg-gray-800/50 rounded-lg p-5 border border-gray-700">
                     <div className="flex items-center space-x-3 mb-4">
                       <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
@@ -1434,108 +835,112 @@ export default function GetQuotePage() {
                       </div>
                       <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
                         <span className="text-gray-400">Make & Model:</span>
-                        <span className="font-semibold text-white">
-                          {vehicle?.make} {vehicle?.model}
+                        <span className="font-semibold text-white uppercase">
+                          {vehicle.make} {vehicle.model}
                         </span>
-                      </div>
-                      <div className="flex justify-between text-sm items-start">
-                        <span className="text-gray-400">Modifications:</span>
-                        <div className="flex flex-wrap gap-1 justify-end max-w-[60%]">
-                          {formData.modifications.length > 0 ? (
-                            formData.modifications.map((mod: any, index: any) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-900/30 text-cyan-300 border border-cyan-700/50"
-                              >
-                                {mod}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="font-semibold text-white">None</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Document Details */}
-                  <div className="bg-gray-800/50 rounded-lg p-5 border border-gray-700">
-                    <div className="flex items-center space-x-3 mb-4">
-                      <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-cyan-400" />
-                      </div>
-                      <h3 className="text-lg font-bold text-white">Document Details</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Duration:</span>
-                        <span className="font-semibold text-white">{formData.duration}</span>
-                      </div>
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Reason:</span>
-                        <span className="font-semibold text-white">{formData.reason}</span>
-                      </div>
-                      <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
-                        <span className="text-gray-400">Start Time:</span>
-                        <span className="font-semibold text-white">{reviewStartTime}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Expiry Time:</span>
-                        <span className="font-semibold text-white">{reviewExpiryTime}</span>
+                        <span className="text-gray-400">Modifications:</span>
+                        <span className="font-semibold text-white">
+                          {formData.modifications.length > 0 ? formData.modifications.join(", ") : "None"}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Price */}
-                  <div className="bg-gradient-to-br from-cyan-600 via-cyan-700 to-cyan-800 rounded-xl p-4 sm:p-6 shadow-lg border border-cyan-500/30">
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shadow-inner">
-                          <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight drop-shadow-sm">
-                            Total Price
-                          </h3>
-                          <p className="text-xs sm:text-sm text-cyan-100/90 font-medium">Your final amount to pay</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-center py-6 sm:py-8 mb-4 sm:mb-6 bg-white/10 backdrop-blur rounded-xl">
-                       <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
-                        {hasActivePromo && (
-                          <span className="text-lg sm:text-2xl font-semibold text-white/50 line-through decoration-2">
-                            £{quote?.total.toFixed(2)}
-                          </span>
-                        )}
-                        <span className="text-4xl sm:text-6xl font-extrabold text-white tracking-tight drop-shadow-lg">
-                          £{finalQuoteTotal.toFixed(2)}
-                        </span>
-                        {hasActivePromo && (
-                           <span className="text-xs sm:text-sm font-bold text-green-200 bg-green-500/40 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full shadow-sm uppercase tracking-wide">
-                            {appliedPromo.discount?.type === 'percentage'
-                              ? `${appliedPromo.discount.value}% off`
-                              : `£${discountAmount.toFixed(2)} off`}
-                          </span>
-                        )}
-                      </div>
-                       <p className="text-xs sm:text-sm text-cyan-100/80 mt-2 sm:mt-3 font-medium tracking-wide uppercase">
-                        Calculated
-                      </p>
-                    </div>
+                )}
 
-                    {/* Promo Code Section */}
-                    <div
-                    className={`p-4 sm:p-5 rounded-xl ${hasActivePromo ? "bg-green-500/20 border border-green-400/30" : promoCode.trim() && discountAmount === 0 ? "bg-red-500/20 border border-red-400/30" : "bg-white/10 border border-white/20"}`}
-                  >
-                       <div className="flex items-center space-x-2 mb-2">
-                        <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                        <span className="text-sm sm:text-base font-bold text-white tracking-tight">Promo Code</span>
+                {/* Document Details */}
+                <div className="bg-gray-800/50 rounded-lg p-5 border border-gray-700">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white">Document Details</h3>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Duration:</span>
+                      <span className="font-semibold text-white">{formData.duration}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Reason:</span>
+                      <span className="font-semibold text-white">{formData.reason || "Borrowing"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Start Time:</span>
+                      <span className="font-semibold text-white">{formatDateTime(getNext5MinuteTime())}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-gray-700 pb-2">
+                      <span className="text-gray-400">Expiry Time:</span>
+                      <span className="font-semibold text-white">
+                        {(() => {
+                          const startTime = getNext5MinuteTime()
+                          const expiryTime = new Date(startTime)
+                          const durationValue = Number.parseInt(formData.duration.split(" ")[0])
+                          if (formData.durationType === "Hours") {
+                            expiryTime.setHours(expiryTime.getHours() + durationValue)
+                          } else if (formData.durationType === "Days") {
+                            expiryTime.setDate(expiryTime.getDate() + durationValue)
+                          } else {
+                            expiryTime.setDate(expiryTime.getDate() + durationValue * 7)
+                          }
+                          return formatDateTime(expiryTime)
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="bg-gradient-to-br from-cyan-600 via-cyan-700 to-cyan-800 rounded-xl p-4 sm:p-6 shadow-lg border border-cyan-500/30">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center shadow-inner">
+                        <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
-                      <p className="text-xs sm:text-sm text-cyan-100/90 mb-3 sm:mb-4 font-medium">
-                        Have a discount code? Enter it below:
-                      </p>
-                      {hasActivePromo ? (
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight drop-shadow-sm">
+                          Total Price
+                        </h3>
+                        <p className="text-xs sm:text-sm text-cyan-100/90 font-medium">Your final amount to pay</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Price Display */}
+                  <div className="text-center py-6 sm:py-8 mb-4 sm:mb-6 bg-white/10 backdrop-blur rounded-xl">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4">
+                      {promoApplied && (
+                        <span className="text-lg sm:text-2xl font-semibold text-white/50 line-through decoration-2">
+                          £{basePrice.toFixed(2)}
+                        </span>
+                      )}
+                      <span className="text-4xl sm:text-6xl font-extrabold text-white tracking-tight drop-shadow-lg">
+                        £{finalPrice.toFixed(2)}
+                      </span>
+                      {promoApplied && (
+                        <span className="text-xs sm:text-sm font-bold text-green-200 bg-green-500/40 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full shadow-sm uppercase tracking-wide">
+                          {discount}% off
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs sm:text-sm text-cyan-100/80 mt-2 sm:mt-3 font-medium tracking-wide uppercase">
+                      Calculated
+                    </p>
+                  </div>
+
+                  {/* Promo Code Section */}
+                  <div
+                    className={`p-4 sm:p-5 rounded-xl ${promoApplied ? "bg-green-500/20 border border-green-400/30" : promoError ? "bg-red-500/20 border border-red-400/30" : "bg-white/10 border border-white/20"}`}
+                  >
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                      <span className="text-sm sm:text-base font-bold text-white tracking-tight">Promo Code</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-cyan-100/90 mb-3 sm:mb-4 font-medium">
+                      Have a discount code? Enter it below:
+                    </p>
+                    {promoApplied ? (
                       <div className="flex items-center justify-between bg-green-500/30 rounded-lg p-3 sm:p-4">
                         <div className="flex items-center space-x-2 sm:space-x-3">
                           <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-400/30 rounded-full flex items-center justify-center">
@@ -1543,15 +948,21 @@ export default function GetQuotePage() {
                           </div>
                           <div>
                             <span className="font-bold text-green-100 block tracking-tight text-sm sm:text-base">
-                              {appliedPromo.promoCode} applied
+                              {promoCode} applied
                             </span>
                             <span className="text-xs sm:text-sm text-green-200/90 font-medium">
-                              You saved £{discountAmount.toFixed(2)}
+                              You saved £{(basePrice - finalPrice).toFixed(2)}
                             </span>
                           </div>
                         </div>
                         <button
-                          onClick={handleRemovePromo}
+                          onClick={() => {
+                            setPromoApplied(false)
+                            setDiscount(0)
+                            setPromoCode("")
+                            setPromoError("")
+                            setFinalPrice(basePrice) // Reset to base price
+                          }}
                           className="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg"
                         >
                           <X className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1559,71 +970,76 @@ export default function GetQuotePage() {
                       </div>
                     ) : (
                       <>
-                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                        <Input
-                          type="text"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value)}
-                          placeholder="Enter your promo code"
-                          className="flex-1 h-11 sm:h-12 text-sm sm:text-base bg-white/90 border-2 border-cyan-300 rounded-lg shadow-sm font-medium outline-none ring-0 focus:border-cyan-400 focus:ring-0 focus:outline-none placeholder:text-cyan-600/50"
-                          disabled={isApplyingPromo}
-                        />
-                        <Button
-                          type="button"
-                          onClick={handleApplyPromo}
-                          className="h-11 sm:h-12 px-6 sm:px-8 bg-white text-cyan-700 hover:bg-cyan-50 font-bold shadow-sm tracking-tight"
-                          disabled={isApplyingPromo || !promoCode.trim()}
-                        >
-                          {isApplyingPromo ? "Applying..." : "Apply"}
-                        </Button>
-                      </div>
-                      {promoCode.trim() && discountAmount === 0 && !isApplyingPromo && (
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                          <Input
+                            type="text"
+                            placeholder="Enter your promo code"
+                            value={promoCode}
+                            onChange={(e) => {
+                              setPromoCode(e.target.value)
+                              setPromoError("")
+                            }}
+                            className="flex-1 h-11 sm:h-12 text-sm sm:text-base bg-white/90 border-2 border-cyan-300 rounded-lg shadow-sm font-medium outline-none ring-0 focus:border-cyan-400 focus:ring-0 focus:outline-none placeholder:text-cyan-600/50"
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleApplyPromo}
+                            className="h-11 sm:h-12 px-6 sm:px-8 bg-white text-cyan-700 hover:bg-cyan-50 font-bold shadow-sm tracking-tight"
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                        {promoError && (
                           <p className="text-red-200 text-xs sm:text-sm mt-2 sm:mt-3 flex items-center">
                             <X className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                            Invalid promo code. Please try again.
+                            {promoError}
                           </p>
                         )}
                       </>
                     )}
-                    </div>
                   </div>
+                </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                    <Button
-                      onClick={handleChangeDetails}
-                      variant="outline"
-                      className="flex-1 h-12 border-2 border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 text-gray-300 font-semibold bg-transparent"
-                    >
-                      Change Details
-                    </Button>
-                    <Button
-                      onClick={handleProceedToPayment}
-                      disabled={isCalculating}
-                      className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white font-semibold shadow-lg"
-                    >
-                      {isCalculating ? (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Processing...</span>
-                        </div>
-                      ) : (
-                        "Proceed to Payment"
-                      )}
-                    </Button>
-                  </div>
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                  <Button
+                    onClick={handleChangeDetails}
+                    variant="outline"
+                    className="flex-1 h-12 border-2 border-gray-700 hover:border-cyan-500 hover:bg-cyan-900/20 text-gray-300 font-semibold bg-transparent"
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Change Details
+                  </Button>
+                  <Button
+                    onClick={handleProceedToPayment}
+                    disabled={isCalculating}
+                    className="flex-1 h-12 bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white font-semibold shadow-lg"
+                  >
+                    {isCalculating ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Processing...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Proceed to Payment
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Form */}
+          {/* Form - only show when not in review mode */}
           {!showQuote && !showReview && (
             <form onSubmit={handleSubmit} className="space-y-6 sm:space-8">
               {/* Duration and Timing */}
               <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-800">
                 <div className="flex items-center space-x-3 mb-6">
-                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-teal-600" />
+                  <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-cyan-400" />
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white">Duration & Timing</h2>
                 </div>
@@ -1647,7 +1063,7 @@ export default function GetQuotePage() {
                       >
                         {type}
                       </button>
-                    ))}}
+                    ))}
                   </div>
                 </div>
 
@@ -1829,7 +1245,7 @@ export default function GetQuotePage() {
                   )}
                 </div>
 
-                {/* 4. Replace the Start Date section with: */}
+                {/* Start Date/Time Selection */}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">
                     WHEN DO YOU WANT TO START?
@@ -1924,7 +1340,6 @@ export default function GetQuotePage() {
                       <option value="Mrs">Mrs</option>
                       <option value="Miss">Miss</option>
                       <option value="Ms">Ms</option>
-                      <option value="Dr">Dr</option>
                     </select>
                   </div>
 
@@ -1977,17 +1392,15 @@ export default function GetQuotePage() {
                     <div className="grid grid-cols-3 gap-2 sm:gap-3">
                       <div>
                         <Input
-                          ref={yearInputRef}
+                          ref={dobDayRef}
                           type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
                           value={formData.dateOfBirthDay}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, "").slice(0, 2)
                             handleInputChange("dateOfBirthDay", value)
                             validateAge(value, formData.dateOfBirthMonth, formData.dateOfBirthYear)
                             if (value.length === 2) {
-                              monthInputRef.current?.focus()
+                              dobMonthRef.current?.focus()
                             }
                           }}
                           className="w-full h-12 text-base text-center shadow-sm bg-black/50 border-gray-700 text-white"
@@ -1998,20 +1411,15 @@ export default function GetQuotePage() {
                       </div>
                       <div>
                         <Input
-                          ref={monthInputRef}
+                          ref={dobMonthRef}
                           type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
                           value={formData.dateOfBirthMonth}
                           onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, "").slice(0, 2)
-                            if (parseInt(value, 10) > 12) {
-                              value = "12"
-                            }
+                            const value = e.target.value.replace(/\D/g, "").slice(0, 2)
                             handleInputChange("dateOfBirthMonth", value)
                             validateAge(formData.dateOfBirthDay, value, formData.dateOfBirthYear)
                             if (value.length === 2) {
-                              yearInputRef.current?.focus()
+                              dobYearRef.current?.focus()
                             }
                           }}
                           className="w-full h-12 text-base text-center shadow-sm bg-black/50 border-gray-700 text-white"
@@ -2022,10 +1430,8 @@ export default function GetQuotePage() {
                       </div>
                       <div>
                         <Input
-                          ref={yearInputRef}
+                          ref={dobYearRef}
                           type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
                           value={formData.dateOfBirthYear}
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, "").slice(0, 4)
@@ -2055,9 +1461,9 @@ export default function GetQuotePage() {
                         onChange={(e) => {
                           setOccupationSearch(e.target.value)
                           setShowOccupationDropdown(true)
-                          const filtered = occupation_list.filter((job) =>
-                            job.desc.toLowerCase().includes(e.target.value.toLowerCase()),
-                          ).map(o => o.desc);
+                          const filtered = occupations.filter((job) =>
+                            job.toLowerCase().includes(e.target.value.toLowerCase()),
+                          )
                           setFilteredOccupations(filtered)
                         }}
                         onFocus={() => setShowOccupationDropdown(true)}
@@ -2111,14 +1517,6 @@ export default function GetQuotePage() {
 
               {/* Address Information */}
               <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-800">
-                {isPostcodeLoading && (
-                  <div className="absolute inset-0 rounded-2xl bg-gray-900/80 backdrop-blur-[2px] flex items-center justify-center z-20">
-                    <div className="flex items-center space-x-3 text-cyan-500 font-semibold">
-                      <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-                      <span>Searching address...</span>
-                    </div>
-                  </div>
-                )}
                 <div className="flex items-center space-x-3 mb-6">
                   <div className="w-10 h-10 bg-cyan-600/20 rounded-lg flex items-center justify-center">
                     <MapPin className="w-5 h-5 text-cyan-400" />
@@ -2147,20 +1545,10 @@ export default function GetQuotePage() {
                       <Button
                         type="button"
                         onClick={handlePostcodeLookup}
-                        disabled={isPostcodeLoading}
-                        className="bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-6 h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center space-x-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white px-6 h-12 text-base font-semibold shadow-md hover:shadow-lg transition-all flex items-center space-x-2"
                       >
-                        {isPostcodeLoading ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            <span>Searching...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Search className="w-4 h-4" />
-                            <span>Search</span>
-                          </>
-                        )}
+                        <Search className="w-4 h-4" />
+                        <span>Search</span>
                       </Button>
                     </div>
                     {postcodeError && <p className="text-red-500 text-sm mt-2">{postcodeError}</p>}
@@ -2180,9 +1568,9 @@ export default function GetQuotePage() {
                         disabled={addresses.length === 0}
                       >
                         <option value="">Select an address...</option>
-                        {addresses.map((address: any, index) => (
-                          <option key={index} value={address.address_selector}>
-                            {address.address_selector}
+                        {addresses.map((address, index) => (
+                          <option key={index} value={address}>
+                            {address}
                           </option>
                         ))}
                       </select>
@@ -2482,18 +1870,39 @@ export default function GetQuotePage() {
           )}
         </div>
       </main>
-      <AuthDialog
-        isOpen={isAuthDialogOpen}
-        onClose={() => setIsAuthDialogOpen(false)}
-        title="Sign In to Continue"
-        description="Sign in or create an account to complete your purchase."
-        onSuccess={() => {
-          setIsAuthDialogOpen(false)
-          setIsLoginCompleted(true)
-        }}
-        disableRedirect={true}
-      />
-      <Footer />
+
+      <footer className="bg-black border-t border-cyan-900/20 py-8 mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-xl sm:text-2xl font-black bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 bg-clip-text text-transparent tracking-tighter">
+                COVERISE
+              </span>
+            </div>
+            <div className="flex items-center gap-6 flex-wrap justify-center">
+              <Link
+                href="/coverise/privacy-policy"
+                className="text-gray-500 hover:text-cyan-400 text-sm transition-colors"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/coverise/terms-of-service"
+                className="text-gray-500 hover:text-cyan-400 text-sm transition-colors"
+              >
+                Terms of Service
+              </Link>
+              <Link
+                href="/coverise/return-policy"
+                className="text-gray-500 hover:text-cyan-400 text-sm transition-colors"
+              >
+                Return Policy
+              </Link>
+            </div>
+            <p className="text-gray-500 text-sm">© 2025 Coverise. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

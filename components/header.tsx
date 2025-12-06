@@ -22,6 +22,7 @@ export function Header() {
 
   const [hideContactLink, setHideContactLink] = useState(false)
   const [hideDocumentsLink, setHideDocumentsLink] = useState(false)
+  const [hideAuthLinks, setHideAuthLinks] = useState(false)
 
   useEffect(() => {
     if (!pathname) return
@@ -32,6 +33,7 @@ export function Header() {
         pathname === "/return-policy",
     )
     setHideDocumentsLink(pathname === "/ai-documents")
+    setHideAuthLinks(pathname === "/login" || pathname === "/ai-payment-confirmation")
   }, [pathname])
 
   return (
@@ -60,7 +62,7 @@ export function Header() {
                 Contact
               </Link>
             )}
-            {isAuthenticated ? (
+            {!hideAuthLinks && (isAuthenticated ? (
               <Link href="/dashboard">
                 <Button className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold px-6 rounded-full shadow-lg shadow-cyan-600/20">
                   Dashboard
@@ -72,7 +74,7 @@ export function Header() {
                   Sign In
                 </Button>
               </Link>
-            )}
+            ))}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -98,7 +100,7 @@ export function Header() {
                 <div className="text-gray-300 hover:text-cyan-400 transition-colors font-medium py-2">Contact</div>
               </Link>
             )}
-            {isAuthenticated ? (
+            {!hideAuthLinks && (isAuthenticated ? (
               <Link href="/dashboard" onClick={closeMobileMenu}>
                 <Button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-full">
                   Dashboard
@@ -110,7 +112,7 @@ export function Header() {
                   Sign In
                 </Button>
               </Link>
-            )}
+            ))}
           </nav>
         )}
       </div>
