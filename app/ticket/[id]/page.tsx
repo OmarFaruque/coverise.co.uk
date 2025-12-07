@@ -25,6 +25,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 import { useSettings } from "@/context/settings";
 import { useToast } from "@/hooks/use-toast";
 
@@ -143,65 +144,77 @@ export default function TicketPage({ params }: { params: { id: string } }) {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "open":
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Open</Badge>
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>
-      case "resolved":
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Resolved</Badge>
-      case "closed":
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Closed</Badge>
-      default:
-        return <Badge>{status}</Badge>
-    }
+    const statusColor = getStatusColor(status)
+    return <Badge className={statusColor}>{status}</Badge>
   }
 
   const getPriorityBadge = (priority: string) => {
+    const priorityColor = getPriorityColor(priority)
+    return <Badge className={priorityColor}>{priority}</Badge>
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "open":
+        return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+      case "in progress":
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+      case "resolved":
+        return "bg-green-500/20 text-green-400 border-green-500/30"
+      case "closed":
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30"
+      default:
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30"
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
       case "high":
-        return <Badge className="bg-red-100 text-red-800 border-red-200">High Priority</Badge>
+        return "bg-red-500/20 text-red-400 border-red-500/30"
       case "medium":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Medium Priority</Badge>
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
       case "low":
-        return <Badge className="bg-green-100 text-green-800 border-green-200">Low Priority</Badge>
+        return "bg-green-500/20 text-green-400 border-green-500/30"
       default:
-        return <Badge>{priority}</Badge>
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30"
     }
   }
 
   if (loading) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 flex items-center justify-center">
-            <div className="flex items-center gap-4 text-lg text-gray-700">
-                <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-                Loading Support Ticket...
-            </div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="flex items-center gap-4 text-lg text-gray-300">
+          <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
+          Loading Support Ticket...
         </div>
+      </div>
     )
   }
 
   if (!ticket) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
+      <div className="min-h-screen bg-black flex flex-col">
         <Header />
 
-        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4">
-          <Card className="w-full max-w-md shadow-lg">
+        <div className="flex-1 flex items-center justify-center px-4">
+          <Card className="w-full max-w-md shadow-2xl border-gray-800 bg-gray-900/50 backdrop-blur-sm">
             <CardContent className="p-8 text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="h-8 w-8 text-red-600" />
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/30">
+                <AlertCircle className="h-8 w-8 text-red-400" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">Support Ticket Not Found</h2>
-              <p className="text-gray-600 mb-6">
+              <h2 className="text-2xl font-bold text-white mb-3">Support Ticket Not Found</h2>
+              <p className="text-gray-400 mb-6">
                 The support ticket you're looking for doesn't exist or the link may have expired.
               </p>
               <div className="space-y-3">
                 <Link href="/contact">
-                  <Button className="w-full bg-teal-600 hover:bg-teal-700">Submit New Support Request</Button>
+                  <Button className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-semibold">
+                    Submit New Support Request
+                  </Button>
                 </Link>
                 <Link href="/">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white bg-transparent">
                     Return to Homepage
                   </Button>
                 </Link>
@@ -210,58 +223,49 @@ export default function TicketPage({ params }: { params: { id: string } }) {
           </Card>
         </div>
 
-        {/* Footer */}
-        <footer className="bg-teal-600 py-4 sm:py-6 px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-white">
-              <Link href="/privacy-policy" className="hover:text-teal-200 transition-colors text-center sm:text-left">
-                Privacy Policy
-              </Link>
-              <Link
-                href="/terms-of-services"
-                className="hover:text-teal-200 transition-colors text-center sm:text-left"
-              >
-                Terms of Services
-              </Link>
-              <Link href="/return-policy" className="hover:text-teal-200 transition-colors text-center sm:text-left">
-                Return Policy
-              </Link>
-            </div>
-            <div className="text-center mt-3 sm:mt-4 text-xs text-teal-100">© {new Date().getFullYear()} {settings?.general?.companyName || 'Mozero AI Ltd'}. All rights reserved.</div>
-          </div>
-        </footer>
+        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
+    <div className="min-h-screen bg-black flex flex-col">
       <Header />
 
+      {/* Animated Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" />
+        <div className="absolute top-0 -right-4 w-96 h-96 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-2000" />
+        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-cyan-600 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse animation-delay-4000" />
+      </div>
+
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="relative bg-gray-900/50 backdrop-blur-sm border-b border-gray-800">
         <div className="max-w-6xl mx-auto px-4 py-3">
-          <div className="flex items-center text-sm text-gray-600">
-            <Link href="/" className="hover:text-teal-600">
+          <div className="flex items-center text-sm text-gray-400">
+            <Link href="/" className="hover:text-cyan-400 transition-colors">
               Home
             </Link>
             <span className="mx-2">/</span>
-            <Link href="/contact" className="hover:text-teal-600">
+            <Link href="/contact" className="hover:text-cyan-400 transition-colors">
               Support
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-gray-900 font-medium">Ticket {ticket.id}</span>
+            <span className="text-white font-medium">Ticket {ticket.id}</span>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="relative max-w-6xl mx-auto px-4 py-8 flex-1">
         <div className="grid gap-8">
           {/* Back Button */}
           <div>
             <Link href="/contact">
-              <Button variant="outline" className="mb-4">
+              <Button
+                variant="outline"
+                className="mb-4 border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white bg-transparent"
+              >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Contact
               </Button>
@@ -269,8 +273,8 @@ export default function TicketPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Ticket Header */}
-          <Card className="shadow-lg border-0 bg-white">
-            <CardHeader className="bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-t-lg">
+          <Card className="shadow-2xl border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl font-bold flex items-center gap-3">
@@ -279,7 +283,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
                     </div>
                     Support Ticket #{ticket.id}
                   </CardTitle>
-                  <CardDescription className="text-teal-100 mt-2 text-lg">{ticket.subject}</CardDescription>
+                  <CardDescription className="text-cyan-100 mt-2 text-lg">{ticket.subject}</CardDescription>
                 </div>
                 <div className="flex items-center gap-3">
                   {getStatusBadge(ticket.status)}
@@ -290,29 +294,29 @@ export default function TicketPage({ params }: { params: { id: string } }) {
             <CardContent className="p-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Customer Information</h4>
-                  <div className="space-y-1 text-gray-600">
+                  <h4 className="font-semibold text-white mb-2">Customer Information</h4>
+                  <div className="space-y-2 text-gray-300">
                     <p>
-                      <span className="font-medium">Name:</span> {ticket.customer.name}
+                      <span className="font-medium text-gray-100">Name:</span> {ticket.customer.name}
                     </p>
                     <p>
-                      <span className="font-medium">Email:</span> {ticket.customer.email}
+                      <span className="font-medium text-gray-100">Email:</span> {ticket.customer.email}
                     </p>
                     <p>
-                      <span className="font-medium">Category:</span> {ticket.category}
+                      <span className="font-medium text-gray-100">Category:</span> {ticket.category}
                     </p>
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Ticket Details</h4>
-                  <div className="space-y-1 text-gray-600">
+                  <h4 className="font-semibold text-white mb-2">Ticket Details</h4>
+                  <div className="space-y-2 text-gray-300">
                     <p className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">Created:</span> {formatDate(ticket.createdAt)}
+                      <Clock className="h-4 w-4 text-cyan-400" />
+                      <span className="font-medium text-gray-100">Created:</span> {formatDate(ticket.createdAt)}
                     </p>
                     <p className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-medium">Last Updated:</span> {formatDate(ticket.updatedAt)}
+                      <Clock className="h-4 w-4 text-cyan-400" />
+                      <span className="font-medium text-gray-100">Last Updated:</span> {formatDate(ticket.updatedAt)}
                     </p>
                   </div>
                 </div>
@@ -321,53 +325,94 @@ export default function TicketPage({ params }: { params: { id: string } }) {
           </Card>
 
           {/* Messages */}
-          <Card className="shadow-lg border-0 bg-white">
-            <CardHeader className="border-b border-gray-100">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <MessageSquare className="h-5 w-5 text-teal-600" />
+          <Card className="shadow-2xl border-gray-800 bg-gray-900/50 backdrop-blur-sm">
+            <CardHeader className="border-b border-gray-800">
+              <CardTitle className="flex items-center gap-2 text-xl text-white">
+                <MessageSquare className="h-5 w-5 text-cyan-400" />
                 Conversation History
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-400">
                 You can reply to this conversation and our {settings?.general?.siteName} support team will be notified immediately.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="h-96 overflow-y-auto space-y-6 mb-8">
+              <div className="space-y-6 mb-8">
                 {ticket.messages.map((message: any) => (
                   <div
                     key={message.id}
                     className={`flex ${message.sender === "admin" ? "justify-start" : "justify-end"}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${`
+                      className={`max-w-[85%] rounded-2xl p-4 shadow-lg ${
                         message.sender === "admin"
-                          ? "bg-gradient-to-br from-teal-50 to-teal-100 border border-teal-200"
-                          : "bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200"
-                      `}`}
+                          ? "bg-gradient-to-br from-cyan-600/20 to-teal-600/20 border border-cyan-500/30"
+                          : "bg-gradient-to-br from-gray-800 to-gray-800/80 border border-gray-700"
+                      }`}
                     >
                       <div className="flex justify-between items-center mb-3">
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${message.sender === "admin" ? "bg-teal-600 text-white" : "bg-gray-600 text-white"}`}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                              message.sender === "admin"
+                                ? "bg-gradient-to-r from-cyan-500 to-teal-500 text-white"
+                                : "bg-gray-700 text-white"
+                            }`}
                           >
                             {message.sender === "admin"
-                              ? "TS"
+                              ? "CS"
                               : ticket.customer.name
                                   .split(" ")
                                   .map((n: string) => n[0])
                                   .join("")}
                           </div>
-                          <span className="font-semibold text-sm">
-                            {message.sender === "admin" ? 'Support Agent' : ticket.customer.name}
+                          <span className="font-semibold text-sm text-white">
+                            {message.sender === "admin" ? 'Coverise Support' : ticket.customer.name}
                           </span>
                         </div>
-                        <span className="text-xs text-gray-500 bg-white/50 px-2 py-1 rounded-full">
+                        <span className="text-xs text-gray-400 bg-black/30 px-2 py-1 rounded-full">
                           {formatDate(message.timestamp)}
                         </span>
                       </div>
-                      <p className="whitespace-pre-wrap text-gray-800 leading-relaxed">{message.content}</p>
+                      <p className="whitespace-pre-wrap text-gray-200 leading-relaxed">{message.content}</p>
 
-                      {/* Attachments are not displayed in history as they are not stored */}
+                      {/* Attachments */}
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mt-4 space-y-2">
+                          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Attachments:
+                          </div>
+                          {message.attachments.map((attachment: any) => (
+                            <div
+                              key={attachment.id}
+                              className="flex items-center gap-3 bg-gray-800/50 rounded-lg p-3 border border-gray-700 shadow-sm"
+                            >
+                              <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                                <FileText className="h-4 w-4 text-cyan-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{attachment.name}</p>
+                                <p className="text-xs text-gray-500">{attachment.size}</p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-cyan-500/20 text-cyan-400"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 hover:bg-cyan-500/20 text-cyan-400"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -376,22 +421,21 @@ export default function TicketPage({ params }: { params: { id: string } }) {
 
               {/* Success Message */}
               {submitSuccess && (
-                <Alert className="mb-6 bg-green-50 border-green-200 shadow-sm">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    <strong>Message sent successfully!</strong> Our MONZIC support team will respond to your inquiry
-                    soon.
+                <Alert className="mb-6 bg-green-500/20 border-green-500/30 shadow-lg">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                  <AlertDescription className="text-green-300">
+                    <strong>Message sent successfully!</strong> Our Coverise support team will respond soon.
                   </AlertDescription>
                 </Alert>
               )}
 
               {/* Reply Form */}
               {ticket.status.toLowerCase() !== "closed" && (
-                <div className="space-y-6 border-t border-gray-100 pt-8">
+                <div className="space-y-6 border-t border-gray-800 pt-8">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Send a Reply</h3>
+                    <h3 className="text-lg font-semibold text-white mb-4">Send a Reply</h3>
                     <div>
-                      <Label htmlFor="reply-message" className="text-sm font-medium text-gray-700">
+                      <Label htmlFor="reply-message" className="text-sm font-medium text-gray-300">
                         Your Message
                       </Label>
                       <Textarea
@@ -399,7 +443,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
                         placeholder="Type your message here... Our support team will be notified immediately."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        className="mt-2 min-h-[120px] focus:ring-teal-500 focus:border-teal-500"
+                        className="mt-2 min-h-[120px] bg-gray-800/50 border-gray-700 text-white placeholder:text-gray-500 focus:ring-cyan-500 focus:border-cyan-500"
                         rows={5}
                       />
                     </div>
@@ -407,23 +451,21 @@ export default function TicketPage({ params }: { params: { id: string } }) {
 
                   {/* File Upload */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Attachments (optional)</Label>
+                    <Label className="text-sm font-medium text-gray-300">Attachments (optional)</Label>
                     <div className="flex items-center gap-3 mt-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-teal-300 text-teal-700 hover:bg-teal-50"
+                        className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
                       >
                         <Paperclip className="h-4 w-4 mr-2" />
                         Add Files
                       </Button>
                       <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" multiple />
+                      <span className="text-sm text-gray-500">Maximum 10MB per file</span>
                     </div>
-                     <p className="text-xs text-gray-500 mt-2">
-                        Note: Attachments are sent directly via email and will not be stored on the ticket page.
-                    </p>
 
                     {/* Attachment Preview */}
                     {attachments.length > 0 && (
@@ -431,20 +473,20 @@ export default function TicketPage({ params }: { params: { id: string } }) {
                         {attachments.map((file, index) => (
                           <div
                             key={index}
-                            className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200"
+                            className="flex items-center gap-3 bg-gray-800/50 p-3 rounded-lg border border-gray-700"
                           >
-                            <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                              <FileText className="h-4 w-4 text-teal-600" />
+                            <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center">
+                              <FileText className="h-4 w-4 text-cyan-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                              <p className="text-sm font-medium text-white truncate">{file.name}</p>
                               <p className="text-xs text-gray-500">{Math.round(file.size / 1024)} KB</p>
                             </div>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => removeAttachment(index)}
-                              className="h-8 w-8 p-0 hover:bg-red-50 text-red-600"
+                              className="h-8 w-8 p-0 hover:bg-red-500/20 text-red-400"
                             >
                               <X className="h-4 w-4" />
                             </Button>
@@ -458,7 +500,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
                     <Button
                       onClick={handleSubmitMessage}
                       disabled={(!newMessage.trim() && attachments.length === 0) || isSubmitting}
-                      className="bg-teal-600 hover:bg-teal-700 px-8 py-2 text-white font-medium shadow-lg"
+                      className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 px-8 py-2 text-white font-medium shadow-lg"
                       size="lg"
                     >
                       <Send className="h-4 w-4 mr-2" />
@@ -469,11 +511,11 @@ export default function TicketPage({ params }: { params: { id: string } }) {
               )}
 
               {ticket.status.toLowerCase() === "closed" && (
-                <Alert className="border-amber-200 bg-amber-50">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
+                <Alert className="border-amber-500/30 bg-amber-500/20">
+                  <AlertCircle className="h-4 w-4 text-amber-400" />
+                  <AlertDescription className="text-amber-300">
                     <strong>This support ticket has been closed.</strong> If you need further assistance, please{" "}
-                    <Link href="/contact" className="underline font-medium hover:text-amber-900">
+                    <Link href="/contact" className="underline font-medium hover:text-amber-200">
                       submit a new support request
                     </Link>
                     .
@@ -485,23 +527,7 @@ export default function TicketPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-teal-600 py-4 sm:py-6 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-white">
-            <Link href="/privacy-policy" className="hover:text-teal-200 transition-colors text-center sm:text-left">
-              Privacy Policy
-            </Link>
-            <Link href="/terms-of-services" className="hover:text-teal-200 transition-colors text-center sm:text-left">
-              Terms of Services
-            </Link>
-            <Link href="/return-policy" className="hover:text-teal-200 transition-colors text-center sm:text-left">
-              Return Policy
-            </Link>
-          </div>
-          <div className="text-center mt-3 sm:mt-4 text-xs text-teal-100">© {new Date().getFullYear()} {settings?.general?.companyName || 'Mozero AI Ltd'}. All rights reserved.</div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, User, ArrowRight, Shield, Clock, RefreshCw } from "lucide-react";
+import { Mail, User, ArrowRight, ShieldCheck, Clock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useSettings } from "@/context/settings"
 import { useToast } from "@/hooks/use-toast";
@@ -278,44 +278,56 @@ export function AuthDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`p-0 max-w-md ${isVerifying ? 'backdrop-blur-sm' : ''}`}>
-        <div className="sm:rounded-lg overflow-hidden">
-          <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-6 text-white text-center">
-            <h2 className="text-2xl font-bold mb-2">{isLogin ? "Welcome Back" : `Join ${settings?.general?.siteName}`}</h2>
-            <p className="text-teal-100 text-sm">
-              {isLogin ? "Sign in to your account" : "Create your account to get started"}
-            </p>
-          </div>
+      <DialogContent className="w-full max-w-md p-0">
+        <div className="bg-gradient-to-br from-gray-900/95 via-gray-900/90 to-black/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-cyan-500/20 overflow-hidden relative">
+            {/* Decorative top border glow */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50" />
 
-          {!showVerification ? (
-            <div className="px-6 py-6">
+            {/* Form Header */}
+            <div className="relative bg-gradient-to-br from-cyan-600 via-cyan-700 to-cyan-800 px-6 py-8 text-white text-center overflow-hidden">
+              {/* Decorative circles */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <ShieldCheck className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold mb-2 drop-shadow-lg">{isLogin ? "Welcome Back" : `Join ${settings?.general?.siteName || 'COVERISE'}`}</h2>
+                <p className="text-cyan-50 text-sm">{isLogin ? "Sign in to your account" : "Create your account to get started"}</p>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            {!showVerification ? (
+            <div className="px-6 py-8 relative">
               <form onSubmit={handleSubmit} className="space-y-5">
                 {!isLogin && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">First Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-cyan-400 transition-colors" />
                         <Input
                           type="text"
                           value={formData.firstName}
                           onChange={(e) => handleInputChange("firstName", e.target.value)}
                           placeholder="John"
-                          className="pl-10 h-12 border-2 border-gray-200 focus:border-teal-500"
+                          className="pl-11 h-12 bg-gray-800/50 backdrop-blur-sm border-2 border-gray-700/50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 text-white placeholder:text-gray-500 rounded-xl transition-all"
                           required
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <label className="block text-sm font-semibold text-gray-300 mb-2">Last Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-cyan-400 transition-colors" />
                         <Input
                           type="text"
                           value={formData.lastName}
                           onChange={(e) => handleInputChange("lastName", e.target.value)}
                           placeholder="Doe"
-                          className="pl-10 h-12 border-2 border-gray-200 focus:border-teal-500"
+                          className="pl-11 h-12 bg-gray-800/50 backdrop-blur-sm border-2 border-gray-700/50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 text-white placeholder:text-gray-500 rounded-xl transition-all"
                           required
                         />
                       </div>
@@ -324,33 +336,36 @@ export function AuthDialog({
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">Email Address</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-cyan-400 transition-colors" />
                     <Input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       placeholder="your@email.com"
-                      className="pl-11 h-12 border-2 border-gray-200 focus:border-teal-500"
+                      className="pl-11 h-12 bg-gray-800/50 backdrop-blur-sm border-2 border-gray-700/50 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 text-white placeholder:text-gray-500 rounded-xl transition-all"
                       required
                     />
                   </div>
                 </div>
 
                 {isLogin && (
-                  <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <input
-                      type="checkbox"
-                      id="remember-me"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="h-5 w-5 text-teal-600 border-2 border-gray-300 rounded focus:ring-teal-500"
-                    />
-                    <label htmlFor="remember-me" className="text-sm font-medium text-gray-700 cursor-pointer">
-                      Keep me signed in
-                    </label>
-                    <Shield className="w-4 h-4 text-teal-600 ml-auto" />
+                  <div className="relative overflow-hidden rounded-xl">
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-600/10 to-cyan-800/10" />
+                    <div className="relative flex items-center space-x-3 bg-gray-800/30 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50">
+                      <input
+                        type="checkbox"
+                        id="remember-me"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="h-5 w-5 text-cyan-600 border-2 border-gray-600 rounded focus:ring-cyan-500 bg-gray-700 cursor-pointer"
+                      />
+                      <label htmlFor="remember-me" className="text-sm font-medium text-gray-300 cursor-pointer flex-1">
+                        Keep me signed in
+                      </label>
+                      <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                    </div>
                   </div>
                 )}
 
@@ -361,16 +376,16 @@ export function AuthDialog({
                       id="terms-agreement"
                       checked={formData.agreeToTerms}
                       onChange={(e) => handleInputChange("agreeToTerms", e.target.checked)}
-                      className="mt-1 h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500 flex-shrink-0"
+                      className="mt-1 h-4 w-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500 flex-shrink-0"
                       required
                     />
-                    <label htmlFor="terms-agreement" className="text-sm text-gray-600 leading-relaxed">
+                    <label htmlFor="terms-agreement" className="text-sm text-gray-400 leading-relaxed">
                       I agree to the{" "}
-                      <Link href="/terms-of-services" className="text-teal-600 hover:text-teal-700 underline">
+                      <Link href="/terms-of-services" className="text-cyan-400 hover:text-cyan-300 underline">
                         Terms of Service
                       </Link>{" "}
                       and{" "}
-                      <Link href="/privacy-policy" className="text-teal-600 hover:text-teal-700 underline">
+                      <Link href="/privacy-policy" className="text-cyan-400 hover:text-cyan-300 underline">
                         Privacy Policy
                       </Link>
                     </label>
@@ -380,7 +395,7 @@ export function AuthDialog({
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white h-12 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 text-white h-13 font-bold shadow-lg shadow-cyan-900/30 hover:shadow-cyan-600/50 transition-all duration-300 flex items-center justify-center space-x-2 rounded-xl text-base"
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -394,31 +409,32 @@ export function AuthDialog({
               </form>
 
               <div className="mt-6 text-center">
-                <p className="text-gray-600 text-sm">
+                <p className="text-gray-400 text-sm">
                   {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
-                  <button onClick={toggleMode} className="text-teal-600 hover:text-teal-700 font-semibold underline">
+                  <button onClick={toggleMode} className="text-cyan-400 hover:text-cyan-300 font-semibold underline decoration-cyan-500/50 underline-offset-2 transition-colors">
                     {isLogin ? "Sign up" : "Sign in"}
                   </button>
                 </p>
               </div>
             </div>
           ) : (
-            <div className="px-6 py-6">
+            <div className="px-6 py-8 relative">
               <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Shield className="w-8 h-8 text-teal-600" />
+                <div className="w-20 h-20 bg-gradient-to-br from-cyan-600 to-cyan-800 rounded-2xl flex items-center justify-center mx-auto mb-4 ring-4 ring-cyan-500/20 shadow-lg shadow-cyan-600/30 relative">
+                  <div className="absolute inset-0 bg-cyan-400/20 rounded-2xl blur animate-pulse" />
+                  <ShieldCheck className="w-10 h-10 text-white relative z-10" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Email</h3>
-                <p className="text-gray-600 text-sm">We've sent a 6-digit verification code to:</p>
-                <p className="font-semibold text-teal-600 mt-1 break-all">{userEmail}</p>
+                <h3 className="text-2xl font-bold text-white mb-2">Verify Your Email</h3>
+                <p className="text-gray-400 text-sm">We've sent a 6-digit verification code to:</p>
+                <p className="font-semibold text-cyan-400 mt-2 break-all text-base">{userEmail}</p>
               </div>
 
               <form onSubmit={handleVerificationSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+                  <label className="block text-sm font-medium text-gray-300 mb-4 text-center">
                     Enter Verification Code
                   </label>
-                  <div className="flex justify-center space-x-2 flex-wrap">
+                  <div className="flex justify-center gap-2 sm:gap-3">
                     {verificationCode.map((digit, index) => (
                       <Input
                         key={index}
@@ -431,21 +447,19 @@ export function AuthDialog({
                         onChange={(e) => handleVerificationCodeChange(index, e.target.value)}
                         onKeyDown={(e) => handleVerificationKeyDown(index, e)}
                         onPaste={handlePaste}
-                        className="w-10 h-12 text-center text-xl font-bold border-2 border-gray-200 focus:border-teal-500 rounded-lg"
+                        className="w-12 h-14 text-center text-2xl font-bold bg-gray-800/50 backdrop-blur-sm border-2 border-gray-600/50 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/30 rounded-xl text-white transition-all shadow-lg focus:shadow-cyan-500/20"
                         autoComplete="off"
                       />
                     ))}
                   </div>
                 </div>
 
-                
-
                 <div className="text-center">
                   {canResend ? (
                     <button
                       type="button"
                       onClick={handleResendCode}
-                      className="text-teal-600 hover:text-teal-700 font-semibold underline flex items-center justify-center space-x-2 mx-auto text-sm"
+                      className="text-cyan-400 hover:text-cyan-300 font-semibold underline decoration-cyan-500/50 flex items-center justify-center space-x-2 mx-auto text-sm transition-colors"
                     >
                       <RefreshCw className="w-4 h-4" />
                       <span>Resend Code</span>
@@ -461,12 +475,12 @@ export function AuthDialog({
                 <Button
                   type="submit"
                   disabled={isVerifying}
-                  className="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white h-12 font-semibold flex items-center justify-center space-x-2"
+                  className="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 text-white h-12 font-bold shadow-lg shadow-cyan-900/30 hover:shadow-cyan-600/50 transition-all duration-300 rounded-xl"
                 >
                   {isVerifying ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Processing...</span>
+                      <span>Verifying...</span>
                     </>
                   ) : (
                     "Verify Email"
@@ -477,7 +491,7 @@ export function AuthDialog({
               <div className="mt-4 text-center">
                 <button
                   onClick={() => setShowVerification(false)}
-                  className="text-gray-500 hover:text-gray-700 text-sm underline"
+                  className="text-gray-400 hover:text-gray-300 text-sm underline decoration-gray-500/50 transition-colors"
                 >
                   Cancel and go back
                 </button>

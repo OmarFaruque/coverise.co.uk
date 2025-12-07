@@ -23,6 +23,8 @@ import {
   Shield,
   Tag,
   FileText,
+  X,
+  Check,
 } from "lucide-react"
 import { useAuth } from "@/context/auth"
 import { AuthDialog } from "@/components/auth/auth-dialog"
@@ -2110,7 +2112,7 @@ export default function GetQuotePage() {
               </div>
 
               {/* Address Information */}
-              <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-800">
+              <div className="bg-gray-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-800 relative">
                 {isPostcodeLoading && (
                   <div className="absolute inset-0 rounded-2xl bg-gray-900/80 backdrop-blur-[2px] flex items-center justify-center z-20">
                     <div className="flex items-center space-x-3 text-cyan-500 font-semibold">
