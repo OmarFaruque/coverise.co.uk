@@ -107,9 +107,9 @@ function buildEmailHtml(siteName: string, companyName: string, subject: string, 
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #00ACC1, #00BCD4); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: linear-gradient(135deg, #0891b2, #0e7490); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f9fafb; padding: 30px; border-radius: 0 0 8px 8px; }
-        .button { display: inline-block; background: #00BCD4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+        .button { display: inline-block; background: #0891b2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
         .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
         .logo { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
       </style>
@@ -153,7 +153,7 @@ export async function createAIDocumentPurchaseEmail(firstName: string, lastName:
 
   let content = replaceEmailVariables(template.content, data);
   if (template.content.includes('{{downloadLink}}')) {
-      const buttonHtml = `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 20px auto;\"><tr><td align=\"center\" style=\"background-color: #00BCD4; border-radius: 6px;\"><a href=\"${downloadLink}\" target=\"_blank\" style=\"display: inline-block; color: white; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; font-family: Arial, sans-serif; font-size: 16px;\"><span style=\"vertical-align: middle;\">&#128196;</span><span style=\"vertical-align: middle; margin-left: 8px;\">Download Document</span></a></td></tr></table>`;
+      const buttonHtml = `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 20px auto;\"><tr><td align=\"center\" style=\"background-color: #0891b2; border-radius: 6px;\"><a href=\"${downloadLink}\" target=\"_blank\" style=\"display: inline-block; color: white; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; font-family: Arial, sans-serif; font-size: 16px;\"><span style=\"vertical-align: middle;\">&#128196;</span><span style=\"vertical-align: middle; margin-left: 8px;\">Download Document</span></a></td></tr></table>`;
       content = content.replace(downloadLink, buttonHtml);
   }
   content = content.replace(/\n/g, '<br>');
@@ -214,7 +214,7 @@ export async function createInsurancePolicyEmail(
 
   let content = replaceEmailVariables(template.content, data);
   if (template.content.includes('{{viewDocument}}')) {
-      const buttonHtml = `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 20px auto;\"><tr><td align=\"center\" style=\"background-color: #00BCD4; border-radius: 6px;\"><a href=\"${policyDocumentLink}\" target=\"_blank\" style=\"display: inline-block; color: white; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; font-family: Arial, sans-serif; font-size: 16px;\"><span style=\"vertical-align: middle;\">&#128196;</span><span style=\"vertical-align: middle; margin-left: 8px;\">View Document</span></a></td></tr></table>`;
+      const buttonHtml = `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 20px auto;\"><tr><td align=\"center\" style=\"background-color: #0891b2; border-radius: 6px;\"><a href=\"${policyDocumentLink}\" target=\"_blank\" style=\"display: inline-block; color: white; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; font-family: Arial, sans-serif; font-size: 16px;\"><span style=\"vertical-align: middle;\">&#128196;</span><span style=\"vertical-align: middle; margin-left: 8px;\">View Document</span></a></td></tr></table>`;
       content = content.replace(policyDocumentLink, buttonHtml);
   }
   content = content.replace(/\n/g, '<br>');
@@ -311,7 +311,7 @@ export async function sendExistingTicketEmail({
     <p>You are receiving this email because you tried to open a new support ticket, but you already have an open ticket with us.</p>
     <p>Please check the status of your existing ticket or add a new reply by clicking the button below.</p>
     <div style="text-align: center; margin: 20px 0;">
-      <a href="${ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #00BCD4; border-radius: 8px; text-decoration: none;">View Your Open Ticket</a>
+      <a href="${ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #0891b2; border-radius: 8px; text-decoration: none;">View Your Open Ticket</a>
     </div>
     <p>Submitting a new ticket is not necessary. We will respond to your existing ticket as soon as possible.</p>
   `;
@@ -366,7 +366,7 @@ export async function sendTicketReplyEmail({
     // Apply styling to {{ticketUrl}} placeholder
     content = content.replace(
       /\{\{ticketUrl\}\}/g,
-      `<div style="text-align: center; margin: 20px 0;"><a href="{{ticketUrl}}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #00BCD4; border-radius: 8px; text-decoration: none;">View Ticket</a></div>`
+      `<div style="text-align: center; margin: 20px 0;"><a href="{{ticketUrl}}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #0891b2; border-radius: 8px; text-decoration: none;">View Ticket</a></div>`
     );
 
     // Now, replace all variables in the pre-styled content
@@ -408,7 +408,7 @@ export async function createPolicyExpiryEmail(
 
   let content = replaceEmailVariables(template.content, data);
   if (template.content.includes('{{renewalLink}}')) {
-      const buttonHtml = `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 20px auto;\"><tr><td align=\"center\" style=\"background-color: #00BCD4; border-radius: 6px;\"><a href=\"${policyDocumentLink}\" target=\"_blank\" style=\"display: inline-block; color: white; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; font-family: Arial, sans-serif; font-size: 16px;\">Get a New Order</a></td></tr></table>`;
+      const buttonHtml = `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 20px auto;\"><tr><td align=\"center\" style=\"background-color: #0891b2; border-radius: 6px;\"><a href=\"${policyDocumentLink}\" target=\"_blank\" style=\"display: inline-block; color: white; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 6px; font-family: Arial, sans-serif; font-size: 16px;\">Get a New Order</a></td></tr></table>`;
       content = content.replace(policyDocumentLink, buttonHtml);
   }
 
@@ -489,7 +489,7 @@ export async function createVerificationCodeEmail(firstName: string, code: strin
   let content = replaceEmailVariables(template.content, data);
   content = content.replace(
       code, 
-      `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 15px auto;\"><tr><td style=\"background-color: #00BCD4; color: white; padding: 15px 25px; border-radius: 8px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px;\">${code}</td></tr></table>`
+      `<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"margin: 15px auto;\"><tr><td style=\"background-color: #0891b2; color: white; padding: 15px 25px; border-radius: 8px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px;\">${code}</td></tr></table>`
   );
 
   // Convert newlines in the final content (from template parts that were not variables)
@@ -532,7 +532,7 @@ export async function createCustomerReplyEmail({
       ${message.trim().replace(/\n/g, '<br>')}
     </div>
     <div style="text-align: center; margin: 20px 0;">
-        <a href="${ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #00BCD4; border-radius: 8px; text-decoration: none;">View Ticket</a>
+        <a href="${ticketUrl}" style="display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; background-color: #0891b2; border-radius: 8px; text-decoration: none;">View Ticket</a>
     </div>
   `;
   const footer = `This is an automated notification. Please do not reply directly to this email.`;

@@ -1,33 +1,40 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { useNotifications } from "@/hooks/use-notifications"
 import { NotificationContainer } from "@/components/notification"
 import { PoliciesSection } from "@/components/dashboard/policies-section"
-import { AccountSection } from "@/components/dashboard/account-section"
-import { UserTicketsSection } from "@/components/dashboard/user-tickets-section"
 import { LogoutDialog } from "@/components/dashboard/logout-dialog"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth"
-import { LogOut, ShieldCheck, User, MessageSquare } from "lucide-react"
-import { DashboardHeader } from "@/components/dashboard/header"
 import { Footer } from "@/components/footer"
+import { X, Menu } from "lucide-react"
 
 export default function DashboardPage() {
-  const [activeSection, setActiveSection] = useState<"policies" | "account" | "tickets">("policies")
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const { notifications, removeNotification, showSuccess } = useNotifications()
   const router = useRouter()
-  const { isAuthenticated, loading, logout } = useAuth()
+  const { user, isAuthenticated, loading: isLoading, logout } = useAuth()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push("/login")
     }
-  }, [isAuthenticated, loading, router])
+  }, [isAuthenticated, isLoading, router])
 
-  if (loading) {
+  const handleLogout = () => {
+    logout()
+    showSuccess("Logged Out Successfully", "You have been logged out of your account.", 5000)
+    setShowLogoutDialog(false)
+  }
+
+  const toggleMobileMenu = () => setMobileMenuOpen((prev) => !prev)
+  const closeMobileMenu = () => setMobileMenuOpen(false)
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -42,83 +49,85 @@ export default function DashboardPage() {
     return null
   }
 
-  const handleLogout = () => {
-    logout()
-    showSuccess("Logged Out Successfully", "You have been logged out of your account.", 5000)
-    setShowLogoutDialog(false)
-  }
-
-  const renderSection = () => {
-    switch (activeSection) {
-      case "policies":
-        return <PoliciesSection />
-      case "account":
-        return <AccountSection />
-      case "tickets":
-        return <UserTicketsSection />
-      default:
-        return <PoliciesSection />
-    }
-  }
-
   return (
     <div className="min-h-screen bg-black flex flex-col">
-      <DashboardHeader onLogoutClick={() => setShowLogoutDialog(true)} />
+      <header className="bg-black/95 backdrop-blur-sm px-4 sm:px-6 py-4 sm:py-5 border-b border-cyan-900/30 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center">
+            <Link
+              href="/"
+              className="text-2xl sm:text-3xl font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent hover:scale-105 transition-transform"
+            >
+              COVERISE
+            </Link>
 
-      <div className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Left Sidebar */}
-          <aside className="md:col-span-1">
-            <div className="bg-gray-900/50 border border-cyan-500/30 rounded-lg p-4 sticky top-24">
-              <nav className="flex flex-col gap-2">
-                <Button
-                  onClick={() => setActiveSection("policies")}
-                  className={`justify-start gap-3 text-base font-medium transition-colors ${
-                    activeSection === "policies"
-                      ? "bg-cyan-500/20 text-cyan-300"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                  }`}
-                  variant="ghost"
-                >
-                  <ShieldCheck className="w-5 h-5" />
-                  My Documents
-                </Button>
-                <Button
-                  onClick={() => setActiveSection("tickets")}
-                  className={`justify-start gap-3 text-base font-medium transition-colors ${
-                    activeSection === "tickets"
-                      ? "bg-cyan-500/20 text-cyan-300"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                  }`}
-                  variant="ghost"
-                >
-                  <MessageSquare className="w-5 h-5" />
-                  My Tickets
-                </Button>
-                <Button
-                  onClick={() => setActiveSection("account")}
-                  className={`justify-start gap-3 text-base font-medium transition-colors ${
-                    activeSection === "account"
-                      ? "bg-cyan-500/20 text-cyan-300"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                  }`}
-                  variant="ghost"
-                >
-                  <User className="w-5 h-5" />
-                  My Account
-                </Button>
-              </nav>
-            </div>
-          </aside>
+            {/* Desktop Navigation */}
+            <nav className="hidden sm:flex gap-6 items-center" role="navigation">
+              <Link
+                href="/ai-documents"
+                className="text-gray-300 hover:text-cyan-400 transition-colors font-medium text-sm"
+              >
+                Documents
+              </Link>
+              <Link
+                href="/contact"
+                className="text-gray-300 hover:text-cyan-400 transition-colors font-medium text-sm"
+              >
+                Contact
+              </Link>
+              <Button
+                onClick={() => setShowLogoutDialog(true)}
+                className="bg-red-600 hover:bg-red-500 text-white font-semibold px-6 rounded-full shadow-lg shadow-red-600/20"
+              >
+                Logout
+              </Button>
+            </nav>
 
-          {/* Main Content */}
-          <main className="md:col-span-3">
-            <div className="bg-gray-900/50 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-6 min-h-[600px]">
-              {renderSection()}
-            </div>
-          </main>
+            {/* Mobile Menu Button */}
+            <button
+              onClick={toggleMobileMenu}
+              className="sm:hidden p-2 text-cyan-400 hover:bg-gray-900 rounded-lg transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <nav className="sm:hidden mt-6 pb-4 space-y-4" role="navigation">
+              <Link href="/ai-documents" onClick={closeMobileMenu} className="block">
+                <div className="text-gray-300 hover:text-cyan-400 transition-colors font-medium py-2">Documents</div>
+              </Link>
+              <Link href="/contact" onClick={closeMobileMenu} className="block">
+                <div className="text-gray-300 hover:text-cyan-400 transition-colors font-medium py-2">Contact</div>
+              </Link>
+              <Button
+                onClick={() => {
+                  closeMobileMenu()
+                  setShowLogoutDialog(true)
+                }}
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold rounded-full"
+              >
+                Logout
+              </Button>
+            </nav>
+          )}
         </div>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-cyan-600 bg-clip-text text-transparent">
+            Your Orders
+          </h1>
+          <p className="text-gray-400 mt-2">View and manage all your documents</p>
+        </div>
+        <div className="bg-gray-900/50 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-6">
+          <PoliciesSection />
+        </div>
+      </main>
 
       <Footer />
 

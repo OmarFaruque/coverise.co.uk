@@ -191,6 +191,8 @@ const PoliciesSection = () => {
     )
   }
 
+
+
   if (policies.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
