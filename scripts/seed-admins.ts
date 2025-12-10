@@ -1,6 +1,6 @@
 
 import { db } from '../lib/db';
-import { admins } from '../lib/schema.ts';
+import { admins } from '../lib/schema';
 import bcrypt from 'bcryptjs';
 
 async function main() {
@@ -24,7 +24,7 @@ async function main() {
       password: passwordManager,
       role: 'Manager',
     },
-  ]);
+  ]).onConflictDoNothing();
 }
 
 main();

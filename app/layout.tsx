@@ -21,7 +21,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const generalSettings = await getSettings("general")
+  const generalSettings = (await getSettings("general")) || {};
   const openaiSettings = await getSettings("openai")
   const bankSettings = await getSettings("bank")
   const stripeSettings = await getSettings("stripe")
