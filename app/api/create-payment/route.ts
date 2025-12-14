@@ -10,11 +10,6 @@ import { getSettings } from "@/lib/database";
 export async function POST(req: NextRequest) {
   const { quoteData, docData, user, tip, discount } = await req.json();
   // Log incoming body for debugging
-  try {
-    console.log('/api/create-payment body:', JSON.stringify({ quoteData: quoteData ? { id: quoteData.id, total: quoteData.total } : null, docData: docData ? { id: docData.id } : null, user: { id: user?.id, email: user?.email } }));
-  } catch (e) {
-    console.log('/api/create-payment body: (failed to stringify)');
-  }
   
   if (!user) {
     return NextResponse.json({ error: "User data is required." }, { status: 400 });

@@ -1,7 +1,43 @@
+CREATE TABLE "admins" (
+	"admin_id" serial PRIMARY KEY NOT NULL,
+	"fname" varchar(255),
+	"lname" varchar(255),
+	"email" varchar(255),
+	"phone" varchar(255),
+	"password" text,
+	"role" varchar(50),
+	"remember_token" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "admins_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE "ai_documents" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"uuid" varchar(255) NOT NULL,
+	"prompt" text,
+	"content" text,
+	"email" varchar(255),
+	"user_id" integer NOT NULL,
+	"status" varchar(50) DEFAULT 'pending',
+	"pdf_path" text,
+	"amount" numeric,
+	"currency" varchar DEFAULT 'GBP',
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "blacklist" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"type" varchar(50) NOT NULL,
-	"value" varchar(255) NOT NULL,
+	"first_name" varchar(255),
+	"last_name" varchar(255),
+	"email" varchar(255),
+	"date_of_birth" varchar(255),
+	"operator" varchar(10) DEFAULT 'AND',
+	"ip_address" varchar(255),
+	"postcode" varchar(50),
+	"reg_number" varchar(50),
 	"reason" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
@@ -9,6 +45,7 @@ CREATE TABLE "blacklist" (
 CREATE TABLE "coupons" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"promo_code" varchar(100) NOT NULL,
+	"case_sensitive" boolean DEFAULT false NOT NULL,
 	"discount" json NOT NULL,
 	"min_spent" varchar(50),
 	"max_discount" varchar(50),
@@ -57,6 +94,7 @@ CREATE TABLE "quotes" (
 	"intent_id" varchar(255),
 	"spayment_id" varchar(255),
 	"name_title" varchar(20),
+	"vehicle_modifications" json,
 	"post_code" varchar(20),
 	"address" text,
 	"town" varchar(100),
@@ -69,7 +107,19 @@ CREATE TABLE "quotes" (
 	"status" varchar(50) DEFAULT 'pending' NOT NULL,
 	"payment_intent_id" varchar(255),
 	"payment_method" varchar(50),
-	"expires_at" timestamp
+	"payment_date" timestamp,
+	"expires_at" timestamp,
+	"expiry_email_sent" boolean DEFAULT false,
+	"fraud_status" varchar(50) DEFAULT 'ok',
+	"fraud_score" integer,
+	"fraud_details" json,
+	"fraud_checked_at" timestamp,
+	"fraud_note" text
+);
+--> statement-breakpoint
+CREATE TABLE "settings" (
+	"param" text PRIMARY KEY NOT NULL,
+	"value" text
 );
 --> statement-breakpoint
 CREATE TABLE "tickets" (
@@ -90,10 +140,21 @@ CREATE TABLE "tickets" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "email_verified_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "created_at" SET DEFAULT now();--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "updated_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "updated_at" SET DEFAULT now();--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "verification_code_expires_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
+CREATE TABLE "users" (
+	"user_id" serial PRIMARY KEY NOT NULL,
+	"email" varchar(255),
+	"stripe_customer_id" varchar(255),
+	"square_customer_id" varchar(255),
+	"email_verified_at" timestamp with time zone,
+	"password" text,
+	"remember_token" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"first_name" varchar(255),
+	"last_name" varchar(255),
+	"verification_code_hash" text,
+	"verification_code_expires_at" timestamp with time zone,
+	CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_ticket_id_tickets_id_fk" FOREIGN KEY ("ticket_id") REFERENCES "public"."tickets"("id") ON DELETE no action ON UPDATE no action;
