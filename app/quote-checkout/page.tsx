@@ -81,8 +81,9 @@ const StripePayment = React.forwardRef(({ quoteData, user, quote, onProcessingCh
             user: user,
           }),
         });
-        const { clientSecret, error: clientSecretError } = await response.json();
-        if (clientSecretError) throw new Error(clientSecretError.message || "Could not initiate Stripe payment.");
+        const respJson = await response.json();
+        if (!response.ok) throw new Error(respJson.error || respJson.details || "Could not initiate Stripe payment.");
+        const clientSecret = respJson.clientSecret;
         
         const cardNumberElement = elements.getElement(CardNumberElement);
         if (!cardNumberElement) throw new Error("Card element not found.");
@@ -183,16 +184,17 @@ const StripeApplePayButton = ({ quoteData, user, quote, onProcessingChange, allT
 
                 try {
                     const response = await fetch("/api/quote-checkout/create-stripe-payment", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            quoteData: { ...quoteData, id: quote.id, total: quoteData?.total },
-                            user: user,
-                        }),
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        quoteData: { ...quoteData, id: quote.id, total: quoteData?.total },
+                        user: user,
+                      }),
                     });
-                    const { clientSecret, error: clientSecretError } = await response.json();
+                    const respJson = await response.json();
                     if (!mounted) return;
-                    if (clientSecretError) throw new Error(clientSecretError.message || "Could not initiate Stripe payment.");
+                    if (!response.ok) throw new Error(respJson.error || respJson.details || "Could not initiate Stripe payment.");
+                    const clientSecret = respJson.clientSecret;
 
                     const { paymentIntent, error: confirmError } = await stripe.confirmCardPayment(
                         clientSecret,

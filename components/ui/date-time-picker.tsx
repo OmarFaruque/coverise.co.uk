@@ -60,7 +60,7 @@ export function DateTimePicker({ date, setDate }: DateTimePickerProps) {
             {date ? format(date, "PPP HH:mm") : <span>Pick a date and time</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0">
+        <PopoverContent side="bottom" align="center" className="w-auto p-0 max-h-[80vh] overflow-auto sm:max-w-md">
           <Calendar
             mode="single"
             selected={date}

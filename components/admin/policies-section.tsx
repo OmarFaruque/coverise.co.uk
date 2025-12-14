@@ -299,6 +299,9 @@ export function PoliciesSection() {
   const [showEditAddresses, setShowEditAddresses] = useState(false)
   const [editPostcodeError, setEditPostcodeError] = useState("")
   const [approvingPolicyId, setApprovingPolicyId] = useState<number | null>(null);
+  const [isFraudDialogOpen, setIsFraudDialogOpen] = useState(false);
+  const [selectedFraudPolicy, setSelectedFraudPolicy] = useState<any | null>(null);
+  const [fraudApprovalNote, setFraudApprovalNote] = useState("");
 
   const [customers, setCustomers] = useState<any[]>([])
 
@@ -701,11 +704,11 @@ export function PoliciesSection() {
         }
         const userPolicies = await response.json();
 
-        const parseDateTime = (dt) => {
+        function parseDateTime(dt: string | null | undefined): { date: string; time: string } {
           if (!dt || typeof dt !== 'string') return { date: '', time: '' };
           const [date, time] = dt.split(' ');
           return { date: date || '', time: time ? time.substring(0, 5) : '' };
-        };
+        }
 
         setSelectedPolicy(policy);
         setSelectedCustomer({ ...policy.user, quotes: userPolicies });
@@ -947,6 +950,62 @@ export function PoliciesSection() {
     }
   };
 
+  const handleOpenFraudDialog = (policy: any) => {
+    setSelectedFraudPolicy(policy);
+    setIsFraudDialogOpen(true);
+  };
+
+  const handleApproveFraud = async (policyId: number, note?: string) => {
+    setApprovingPolicyId(policyId);
+    try {
+      const res = await fetch('/api/admin/policies/approve-fraud', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyId, note }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to approve fraud');
+      }
+
+      await Promise.all([loadPaidPolicies(), loadUnconfirmedPolicies()]);
+      setIsFraudDialogOpen(false);
+      setSelectedFraudPolicy(null);
+    } catch (err) {
+      console.error('Error approving fraud:', err);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to approve fraud' });
+    } finally {
+      setApprovingPolicyId(null);
+    }
+  };
+
+  const handleRetryFraud = async (policyId: number) => {
+    setApprovingPolicyId(policyId);
+    try {
+      const res = await fetch('/api/admin/policies/retry-fraud', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policyId }),
+      });
+
+      if (!res.ok) throw new Error('Failed to retry fraud check');
+
+      await Promise.all([loadPaidPolicies(), loadUnconfirmedPolicies()]);
+      const data = await res.json();
+      // refresh dialog with updated policy if open
+      if (isFraudDialogOpen) {
+        const updated = paidPolicies.find(p => p.id === policyId) || unconfirmedPolicies.find(p => p.id === policyId);
+        if (updated) setSelectedFraudPolicy(updated as any);
+      }
+      toast({ title: 'Retry Complete', description: 'Fraud check re-run and results saved.' });
+    } catch (err) {
+      console.error('Error retrying fraud check:', err);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to retry fraud check' });
+    } finally {
+      setApprovingPolicyId(null);
+    }
+  };
+
   const handleGenerateInvoice = async (policyNumber: string, policyId: number) => {
     setGeneratingInvoice(policyId);
     try {
@@ -1095,7 +1154,16 @@ export function PoliciesSection() {
                       <TableCell className="font-mono">{policy.regNumber}</TableCell>
                       <TableCell>£{Number(policy.updatePrice || policy.cpw || 0).toFixed(2)}</TableCell>
                       <TableCell>{formatPaymentMethod(policy.paymentMethod)}</TableCell>
-                      <TableCell>{getStatusBadge(policy)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(policy)}
+                          {policy?.fraudStatus && policy?.fraudStatus !== 'ok' && (
+                            <Badge className={policy.fraudStatus === 'blocked' || policy.fraudStatus === 'error' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
+                              {policy.fraudStatus === 'blocked' ? 'Fraud: Blocked' : policy.fraudStatus === 'error' ? 'Fraud: Error' : 'Fraud: Warning'}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div>{formatShortDate(policy.startDate)}</div>
@@ -1145,6 +1213,24 @@ export function PoliciesSection() {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+                          {policy?.fraudStatus && policy?.fraudStatus !== 'ok' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenFraudDialog(policy)}
+                                  >
+                                    <AlertTriangle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View Fraud Details</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           {/* <Button variant="outline" size="sm" onClick={() => handleViewCustomer(policy)}>
                             <User className="h-4 w-4" />
                           </Button> */}
@@ -1248,7 +1334,16 @@ export function PoliciesSection() {
                       <TableCell className="font-mono">{policy.regNumber}</TableCell>
                       <TableCell>£{Number(policy.cpw || 0).toFixed(2)}</TableCell>
                       <TableCell>{formatPaymentMethod(policy.paymentMethod)}</TableCell>
-                      <TableCell>{getStatusBadge(policy)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(policy)}
+                          {policy?.fraudStatus && policy?.fraudStatus !== 'ok' && (
+                            <Badge className={policy.fraudStatus === 'blocked' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
+                              {policy.fraudStatus === 'blocked' ? 'Fraud: Blocked' : 'Fraud: Warning'}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="text-sm">
                           <div>{formatShortDate(policy.startDate)}</div>
@@ -1298,6 +1393,24 @@ export function PoliciesSection() {
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+                          {policy?.fraudStatus && policy?.fraudStatus !== 'ok' && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenFraudDialog(policy)}
+                                  >
+                                    <AlertTriangle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>View Fraud Details</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                           {/* <Button variant="outline" size="sm" onClick={() => handleViewCustomer(policy)}>
                             <User className="h-4 w-4" />
                           </Button> */}
@@ -1862,6 +1975,121 @@ export function PoliciesSection() {
               <Button variant="destructive" onClick={handleDeletePolicy}>
                 Delete Policy
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Fraud Details Modal */}
+        <Dialog open={isFraudDialogOpen} onOpenChange={setIsFraudDialogOpen}>
+          <DialogContent className="max-w-2xl bg-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                Fraud Detection Details
+              </DialogTitle>
+              <DialogDescription>
+                Policy: {selectedFraudPolicy?.policyNumber}
+              </DialogDescription>
+            </DialogHeader>
+            {selectedFraudPolicy && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Fraud Status</p>
+                    <p className="text-lg font-semibold mt-1">
+                      {selectedFraudPolicy.fraudStatus === 'blocked' ? (
+                        <span className="text-red-600">Blocked</span>
+                      ) : (
+                        <span className="text-yellow-600">Warning</span>
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Fraud Score</p>
+                    <p className="text-lg font-semibold mt-1">{selectedFraudPolicy.fraudScore || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Checked At</p>
+                    <p className="text-sm mt-1">
+                      {selectedFraudPolicy.fraudCheckedAt
+                        ? new Date(selectedFraudPolicy.fraudCheckedAt).toLocaleString()
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 font-medium">Customer</p>
+                    <p className="text-sm mt-1">
+                      {selectedFraudPolicy.firstName} {selectedFraudPolicy.lastName}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedFraudPolicy.fraudDetails && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Fraud Detection Analysis</p>
+                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
+                      <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                        {typeof selectedFraudPolicy.fraudDetails === 'string'
+                          ? selectedFraudPolicy.fraudDetails
+                          : JSON.stringify(selectedFraudPolicy.fraudDetails, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFraudPolicy.fraudNote && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Admin Notes</p>
+                    <p className="text-sm text-gray-600 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      {selectedFraudPolicy.fraudNote}
+                    </p>
+                  </div>
+                )}
+
+                {selectedFraudPolicy.fraudStatus !== 'ok' && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <p className="text-sm font-medium text-gray-700">Approve Fraud Flag</p>
+                    <textarea
+                      placeholder="Optional: Add a note about why you're approving this transaction..."
+                      value={fraudApprovalNote}
+                      onChange={(e) => setFraudApprovalNote(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <DialogFooter className="mt-6">
+              <Button variant="outline" onClick={() => setIsFraudDialogOpen(false)}>
+                Close
+              </Button>
+              {selectedFraudPolicy?.fraudStatus !== 'ok' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => handleRetryFraud(selectedFraudPolicy.id)}
+                    disabled={approvingPolicyId === selectedFraudPolicy?.id}
+                    variant="outline"
+                  >
+                    {approvingPolicyId === selectedFraudPolicy?.id ? (
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : null}
+                    Retry Check
+                  </Button>
+
+                  <Button
+                    onClick={() => handleApproveFraud(selectedFraudPolicy.id, fraudApprovalNote)}
+                    disabled={approvingPolicyId === selectedFraudPolicy?.id}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {approvingPolicyId === selectedFraudPolicy?.id ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    ) : null}
+                    Approve Fraud
+                  </Button>
+                </div>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             response = {
               success: false,
-              message: `Failed to connect to Paddle: ${error.message}`,
+              message: `Failed to connect to Paddle: ${error instanceof Error ? error.message : String(error)}`,
             };
           }
         }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             response = {
               success: false,
-              message: `Failed to connect to Resend: ${error.message}`,
+              message: `Failed to connect to Resend: ${error instanceof Error ? error.message : String(error)}`,
             };
           }
         }
@@ -148,6 +148,47 @@ export async function POST(request: NextRequest) {
             success: true,
             message: "Successfully connected to Mollie (mock)",
           };
+        }
+        break;
+
+      case "fraudLabsPro":
+        if (!config.apiKey) {
+          response = {
+            success: false,
+            message: "API Key is required for FraudLabsPro integration",
+          };
+        } else {
+          try {
+            // Send a lightweight POST to the documented screen endpoint
+            const params = new URLSearchParams();
+            params.set('key', config.apiKey);
+            params.set('format', 'json');
+
+            const fraudLabsResponse = await fetch("https://api.fraudlabspro.com/v2/order/screen", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: params.toString(),
+            });
+
+            if (fraudLabsResponse.ok) {
+              response = {
+                success: true,
+                message: "Successfully connected to FraudLabsPro",
+              };
+            } else {
+              // Non-2xx from provider still indicates the endpoint is reachable; report provider status
+              const body = await fraudLabsResponse.text().catch(() => "");
+              response = {
+                success: false,
+                message: `FraudLabsPro returned status ${fraudLabsResponse.status}: ${body || fraudLabsResponse.statusText}`,
+              };
+            }
+          } catch (error) {
+            response = {
+              success: false,
+              message: `Failed to connect to FraudLabsPro: ${error instanceof Error ? error.message : String(error)}`,
+            };
+          }
         }
         break;
 

@@ -498,13 +498,10 @@ export function CouponsSection() {
 
             {/* Edit Coupon Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white text-black">
                 <DialogHeader>
                   <DialogTitle className="flex items-center justify-between">
                     Edit Coupon
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditDialogOpen(false)}>
-                      <X className="h-4 w-4" />
-                    </Button>
                   </DialogTitle>
                 </DialogHeader>
                 {selectedCoupon && (

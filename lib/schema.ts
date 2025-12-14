@@ -81,6 +81,13 @@ export const quotes = pgTable("quotes", {
 	paymentDate: timestamp("payment_date", { mode: 'string' }),
 	expiresAt: timestamp("expires_at", { mode: 'string' }),
 	expiryEmailSent: boolean("expiry_email_sent").default(false),
+
+	// Fraud detection fields (added for FraudLabsPro integration)
+	fraudStatus: varchar("fraud_status", { length: 50 }).default('ok'), // 'ok' | 'warning' | 'blocked'
+	fraudScore: integer("fraud_score"),
+	fraudDetails: json("fraud_details"),
+	fraudCheckedAt: timestamp("fraud_checked_at", { mode: 'string' }),
+	fraudNote: text("fraud_note"),
 	});
 
 export const coupons = pgTable("coupons", {

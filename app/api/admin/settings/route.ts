@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     if (logData.vehicleApi?.apiKey) logData.vehicleApi.apiKey = "[REDACTED]";
     if (logData.stripe?.secretKey) logData.stripe.secretKey = "[REDACTED]";
     if (logData.mollie?.apiKey) logData.mollie.apiKey = "[REDACTED]";
+    if (logData.fraudLabsPro?.apiKey) logData.fraudLabsPro.apiKey = "[REDACTED]";
 
     revalidatePath('/');
     revalidatePath('/administrator');

@@ -649,6 +649,7 @@ export function SettingsSection() {
     },
     general: {
       logo: "",
+      favicon: "",
       siteName: "MONZIC",
       supportEmail: "support@tempnow.uk",
       adminEmail: "admin@tempnow.uk",
@@ -667,6 +668,15 @@ export function SettingsSection() {
       redirectUrl: "",
       activeRedirection: "0",
       checkoutCheckboxContent: "",
+    },
+    fraudLabsPro: {
+      enabled: false,
+      apiKey: "",
+      minAmount: "0",
+      action: "block",
+      failOpen: true,
+      blockThreshold: 80,
+      warnThreshold: 60,
     },
     bank: {
       show: false,
@@ -1033,7 +1043,7 @@ export function SettingsSection() {
     setHasChanges(true)
   }
 
-  const [showKeys, setShowKeys] = useState({
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({
     paddle: false,
     stripe: false,
     mollie: false,
@@ -1041,6 +1051,8 @@ export function SettingsSection() {
     openai: false,
     resend: false,
     vehicleApi: false,
+    airwallex: false,
+    fraudLabsPro: false,
   })
 
   const [testResults, setTestResults] = useState<Record<string, any>>({})
@@ -1533,7 +1545,7 @@ export function SettingsSection() {
                   </SelectContent>
                 </Select>
               </div>
-
+              <div className="mt-2"><small className="text-xs text-gray-500"><i>Webhook URL: {process.env.NEXT_PUBLIC_BASE_URL}/api/stripe-webhook</i></small></div>
               <Button
                 onClick={() => testConnection("stripe")}
                 disabled={testing.stripe || !process.env.STRIPE_SECRET_KEY}
@@ -2388,6 +2400,148 @@ export function SettingsSection() {
                 </div>
               </div>
 
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-red-600" />
+                FraudLabsPro Integration
+              </CardTitle>
+              <CardDescription>Configure FraudLabsPro for payment fraud detection and prevention</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800">
+                  FraudLabsPro provides advanced fraud detection and prevention for online payments. Enable this service to protect your customers from fraudulent transactions.
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-2 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <Checkbox
+                  id="enable-fraud-detection"
+                  checked={settings.fraudLabsPro?.enabled || false}
+                  onCheckedChange={(checked) => updateSetting("fraudLabsPro", "enabled", !!checked)}
+                />
+                <Label htmlFor="enable-fraud-detection" className="font-medium text-gray-700">
+                  Enable FraudLabsPro Fraud Detection
+                </Label>
+              </div>
+
+              {settings.fraudLabsPro?.enabled && (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="fraudlabs-api-key">API Key</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="fraudlabs-api-key"
+                        type={showKeys.fraudLabsPro ? "text" : "password"}
+                        placeholder="Enter your FraudLabsPro API Key"
+                        value={showKeys.fraudLabsPro ? (settings.fraudLabsPro?.apiKey || '') : maskApiKey(settings.fraudLabsPro?.apiKey || '')}
+                        onChange={(e) => updateSetting("fraudLabsPro", "apiKey", e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button type="button" variant="outline" size="sm" onClick={() => toggleKeyVisibility("fraudLabsPro")}>
+                        {showKeys.fraudLabsPro ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Get your API key from <a href="https://www.fraudlabspro.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">fraudlabspro.com</a>
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fraudlabs-min-amount">Minimum Amount to Check (£)</Label>
+                    <Input
+                      id="fraudlabs-min-amount"
+                      type="number"
+                      placeholder="100"
+                      value={settings.fraudLabsPro?.minAmount || '05'}
+                      onChange={(e) => updateSetting("fraudLabsPro", "minAmount", e.target.value)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Only check payments above this amount for fraud. Enter 0 to check all payments.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fraudlabs-action">Action on Fraud Detection</Label>
+                    <Select
+                      value={settings.fraudLabsPro?.action || 'block'}
+                      onValueChange={(value) => updateSetting("fraudLabsPro", "action", value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="block">Block Payment</SelectItem>
+                        <SelectItem value="review">Manual Review Required</SelectItem>
+                        <SelectItem value="allow">Allow with Warning</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose how to handle transactions flagged as fraudulent or suspicious.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="fraudlabs-failopen">On provider failure</Label>
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="fraudlabs-failopen"
+                        checked={settings.fraudLabsPro?.failOpen ?? true}
+                        onCheckedChange={(checked) => updateSetting("fraudLabsPro", "failOpen", !!checked)}
+                      />
+                      <div className="text-sm text-gray-600">
+                        Fail open on provider errors (allow payments when FraudLabsPro is unreachable).
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      If enabled, payments will continue when the fraud provider returns an error. Disable to block payments when provider failures occur.
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={() => testConnection("fraudLabsPro")}
+                    disabled={testing.fraudLabsPro || !settings.fraudLabsPro?.apiKey}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {testing.fraudLabsPro ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
+                        Testing...
+                      </>
+                    ) : (
+                      <>
+                        <TestTube className="h-4 w-4 mr-2" />
+                        Test FraudLabsPro Connection
+                      </>
+                    )}
+                  </Button>
+
+                  {testResults.fraudLabsPro && (
+                    <div
+                      className={`p-3 rounded-lg border ${testResults.fraudLabsPro.success ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        {testResults.fraudLabsPro.success ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                        )}
+                        <span
+                          className={`text-sm font-medium ${testResults.fraudLabsPro.success ? "text-green-800" : "text-red-800"}`}
+                        >
+                          {testResults.fraudLabsPro.message}
+                        </span>
+                        <span className="text-xs text-gray-500">({testResults.fraudLabsPro.timestamp})</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
