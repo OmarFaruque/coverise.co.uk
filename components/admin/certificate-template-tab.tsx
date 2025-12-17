@@ -1,16 +1,47 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { FileText } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { FileText, Upload } from "lucide-react"
 
 export function CertificateTemplateTab({ settings, updateSetting }: { settings: any; updateSetting: any }) {
   const template = settings.certificateTemplate || {}
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   const handleTemplateChange = (part: string, value: string) => {
     updateSetting("certificateTemplate", part, value)
+  }
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploadingLogo(true)
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const response = await fetch("/api/admin/upload-logo", {
+        method: "POST",
+        body: formData,
+      })
+      const result = await response.json()
+      if (result.success) {
+        handleTemplateChange("logo", result.url)
+      } else {
+        console.error("Logo upload failed:", result.error)
+      }
+    } catch (error) {
+      console.error("Error uploading logo:", error)
+    } finally {
+      setUploadingLogo(false)
+    }
   }
 
   const availableVariables = [
@@ -60,6 +91,30 @@ export function CertificateTemplateTab({ settings, updateSetting }: { settings: 
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+
+      <div>
+          <Label>Template Logo</Label>
+          <div className="flex items-center gap-4 mt-2">
+            {template.logo ? (
+              <img src={template.logo} alt="Current logo" className="h-16 w-auto rounded-md border p-1" />
+            ) : (
+              <div className="h-16 w-32 flex items-center justify-center bg-gray-100 rounded-md text-sm text-gray-500">
+                No Logo
+              </div>
+            )}
+            <Input id="cert-logo-upload" type="file" onChange={handleLogoUpload} className="hidden" accept="image/*" />
+            <Button asChild variant="outline">
+              <Label htmlFor="cert-logo-upload" className="cursor-pointer">
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadingLogo ? "Uploading..." : "Upload Logo"}
+              </Label>
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">
+            Upload a specific logo for this document. If no logo is uploaded, the default system logo will be used.
+          </p>
+        </div>
+
         <div>
           <Label htmlFor="cert-page1">Page 1 Content (HTML)</Label>
           <Textarea
