@@ -8,75 +8,50 @@ import { revalidatePath } from "next/cache";
 import { getSettings } from "@/lib/database";
 
 export async function POST(req: NextRequest) {
-  const { quoteData, user } = await req.json();
-
-  if (!quoteData) {
-    return NextResponse.json({ error: "Quote data is required." }, { status: 400 });
-  }
-
-  try {
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-
-    if (!stripeSecretKey) {
-      return NextResponse.json({ error: "Stripe secret key is not set in the environment variables." }, { status: 500 });
-    }
-
-    // Fetch site name from settings
-    const generalSettings = await db.query.settings.findFirst({
-      where: eq(settings.param, 'general')
-    });
-    let siteName = "";
-    if (generalSettings && generalSettings.value) {
-      const parsedSettings = JSON.parse(generalSettings.value);
-      siteName = parsedSettings.siteName || "";
-    }
-
-    const stripe = new Stripe(stripeSecretKey);
-
-    let stripeCustomerId = user.stripeCustomerId;
-
+      const { quoteData, user, flp_checksum } = await req.json();
   
-
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({ email: user.email });
-      stripeCustomerId = customer.id;
-      await db.update(users).set({ stripeCustomerId }).where(eq(users.userId, user.id));
-    }
-
-    const finalAmount = quoteData.total;
+      if (!quoteData) {
+          return NextResponse.json({ error: "Quote data is required." }, { status: 400 });
+      }
+  
+      try {
+          const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  
+          if (!stripeSecretKey) {
+              return NextResponse.json({ error: "Stripe secret key is not set in the environment variables." }, { status: 500 });
+          }
+  
+          // Fetch site name from settings
+          const generalSettings = await db.query.settings.findFirst({
+              where: eq(settings.param, 'general')
+          });
+          let siteName = "";
+          if (generalSettings && generalSettings.value) {
+              const parsedSettings = JSON.parse(generalSettings.value);
+              siteName = parsedSettings.siteName || "";
+          }
+  
+          const stripe = new Stripe(stripeSecretKey);
+  
+          let stripeCustomerId = user.stripeCustomerId;
+  
+  
+  
+          if (!stripeCustomerId) {
+              const customer = await stripe.customers.create({ email: user.email });
+              stripeCustomerId = customer.id;
+              await db.update(users).set({ stripeCustomerId }).where(eq(users.userId, user.id));
+          }
+  
+          const finalAmount = quoteData.total;
+  
 
     // Run a FraudLabsPro check before creating payment intent
     try {
       const fraudSettings = await getSettings("fraudLabsPro");
       const apiKey = fraudSettings?.apiKey;
       if (apiKey) {
-        const params = new URLSearchParams();
-        params.set("key", apiKey);
-        if (user?.email) params.set("email", user.email);
-        if (quoteData?.customerData?.firstName) params.set("first_name", quoteData.customerData.firstName as string);
-        if (quoteData?.customerData?.lastName) params.set("last_name", quoteData.customerData.lastName as string);
-        if (finalAmount) params.set("amount", String(finalAmount));
-
-        // Additional optional fields to improve accuracy (only set when available)
-        if (quoteData?.id) params.set("order_id", String(quoteData.id));
-        // Currency: prefer quoteData.currency, otherwise default to GBP
-        const currency = (quoteData as any)?.currency || "GBP";
-        if (currency) params.set("currency", currency);
-
-        const billingAddress = quoteData?.customerData?.address;
-        if (billingAddress) params.set("billing_address", billingAddress as string);
-
-        const postcode = quoteData?.customerData?.post_code ?? quoteData?.customerData?.postcode ?? (quoteData?.customerData as any)?.postCode;
-        if (postcode) params.set("billing_postcode", postcode as string);
-
-        const phone = quoteData?.customerData?.phoneNumber ?? (quoteData?.customerData as any)?.phone;
-        if (phone) params.set("billing_phone", phone as string);
-
-        // User agent / device info
-        const ua = req.headers.get("user-agent");
-        if (ua) params.set("user_agent", ua);
-
-        // Try to get client IP from headers (if behind proxy) but skip private/local IPs
+        // IP handling logic needs to be moved up before flp.validate()
         const checkIsPrivateIp = (ip?: string) => {
           if (!ip) return true;
           if (ip === "::1" || ip === "127.0.0.1") return true;
@@ -87,31 +62,68 @@ export async function POST(req: NextRequest) {
           return false;
         }
 
+        let ip = '';
         const xff = req.headers.get("x-forwarded-for");
         if (xff) {
-          const ip = xff.split(",")[0].trim();
-          if (ip && !checkIsPrivateIp(ip)) params.set("ip", ip);
+          const extractedIp = xff.split(",")[0].trim();
+          if (extractedIp && !checkIsPrivateIp(extractedIp)) ip = extractedIp;
         }
 
+        const ua = req.headers.get("user-agent");
 
+        const billingAddress = quoteData?.customerData?.address;
+        const postcode = quoteData?.customerData?.post_code ?? quoteData?.customerData?.postcode ?? (quoteData?.customerData as any)?.postCode;
+        const phone = quoteData?.customerData?.phoneNumber ?? (quoteData?.customerData as any)?.phone;
 
-          // console.log('FraudLabsPro check params:', Object.fromEntries(params.entries()));
+        const fraudlabsproParams = new URLSearchParams();
+        fraudlabsproParams.set("key", apiKey);
+        fraudlabsproParams.set("format", "json");
 
+        if (flp_checksum) fraudlabsproParams.set("flp_checksum", flp_checksum);
+        if (ip) fraudlabsproParams.set("ip", ip);
+        fraudlabsproParams.set("user_order_id", String(quoteData.id));
+        fraudlabsproParams.set("user_order_memo", `Quote for ${quoteData.customerData?.firstName} ${quoteData.customerData?.lastName} - ${quoteData.id}`);
+        fraudlabsproParams.set("currency", (quoteData as any)?.currency || "GBP");
+        fraudlabsproParams.set("amount", String(finalAmount));
+        fraudlabsproParams.set("quantity", "1"); // Always 1 for a single quote
+        fraudlabsproParams.set("payment_gateway", 'stripe');
+        fraudlabsproParams.set("payment_mode", 'creditcard'); // Assuming creditcard for Stripe
+        fraudlabsproParams.set("first_name", quoteData.customerData?.firstName as string);
+        fraudlabsproParams.set("last_name", quoteData.customerData?.lastName as string);
+        fraudlabsproParams.set("email", user.email);
+        if (phone) fraudlabsproParams.set("user_phone", phone);
+        if (billingAddress) fraudlabsproParams.set("bill_addr", billingAddress);
+        if (quoteData.customerData?.city) fraudlabsproParams.set("bill_city", quoteData.customerData?.city);
+        if (quoteData.customerData?.state) fraudlabsproParams.set("bill_state", quoteData.customerData?.state);
+        if (postcode) fraudlabsproParams.set("bill_zip_code", postcode);
+        fraudlabsproParams.set("bill_country", quoteData.customerData?.country || 'GB'); // Defaulting to GB
+        fraudlabsproParams.set("ship_first_name", quoteData.customerData?.firstName as string);
+        fraudlabsproParams.set("ship_last_name", quoteData.customerData?.lastName as string);
+        if (billingAddress) fraudlabsproParams.set("ship_addr", billingAddress);
+        if (quoteData.customerData?.city) fraudlabsproParams.set("ship_city", quoteData.customerData?.city);
+        if (quoteData.customerData?.state) fraudlabsproParams.set("ship_state", quoteData.customerData?.state);
+        if (postcode) fraudlabsproParams.set("ship_zip_code", postcode);
+        fraudlabsproParams.set("ship_country", quoteData.customerData?.country || 'GB');
+        if (ua) fraudlabsproParams.set("user_agent", ua);
 
-          // Use documented /v2/order/screen endpoint (POST, form-encoded)
-          params.set("format", "json");
+        if (quoteData.promoCode) {
+            fraudlabsproParams.set("promo_code", quoteData.promoCode);
+        }
 
-          const url = `https://api.fraudlabspro.com/v2/order/screen`;
-          const fraudRes = await fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString(),
-          });
+        const url = `https://api.fraudlabspro.com/v2/order/screen`;
 
-          // console.log('FraudLabsPro HTTP status:', fraudRes.status, fraudRes.statusText);
-          const raw = await fraudRes.json().catch(() => null);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: fraudlabsproParams.toString(),
+        });
 
-          // console.log('FraudLabsPro response:', raw);
+        
+
+        const raw = await res.json().catch(() => null);
+
+        // If the provider returned a non-200 or included an error object, mark as provider error
+        const providerError = !res.ok || (raw && (raw.error || raw.error_message || raw.error_code));
 
         let score: number | null = null;
         if (raw) {
@@ -122,11 +134,11 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        
+
         const blockThreshold = fraudSettings?.blockThreshold ?? 80;
         const warnThreshold = fraudSettings?.warnThreshold ?? 60;
         const explicitFraud = raw && (raw.is_fraud === true || raw.is_highrisk === true || raw.is_flagged === true);
-
-        const providerError = !fraudRes.ok || (raw && (raw.error || raw.error_message || raw.error_code));
 
         let action: "block" | "warn" | "allow" | "error" = "allow";
 

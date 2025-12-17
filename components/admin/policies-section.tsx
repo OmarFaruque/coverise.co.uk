@@ -1127,7 +1127,7 @@ export function PoliciesSection() {
                   {!paidLoading && !paidError && paidPolicies.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
-                        No policies found.
+                        No orders found.
                       </TableCell>
                     </TableRow>
                   )}
@@ -1307,7 +1307,7 @@ export function PoliciesSection() {
                   {!unconfirmedLoading && !unconfirmedError && unconfirmedPolicies.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
-                        No policies found.
+                        No orders found.
                       </TableCell>
                     </TableRow>
                   )}
@@ -1457,7 +1457,7 @@ export function PoliciesSection() {
 
         {/* Edit Policy Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl bg-white">
             <DialogHeader>
               <DialogTitle>Edit Order</DialogTitle>
               <DialogDescription>Update order details for {selectedPolicy?.policyNumber}</DialogDescription>
@@ -1958,7 +1958,7 @@ export function PoliciesSection() {
 
         {/* Delete Policy Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
@@ -2026,6 +2026,51 @@ export function PoliciesSection() {
 
                 {selectedFraudPolicy.fraudDetails && (
                   <div className="space-y-2">
+                    {(() => {
+                      try {
+                        const raw = typeof selectedFraudPolicy.fraudDetails === 'string'
+                          ? JSON.parse(selectedFraudPolicy.fraudDetails)
+                          : selectedFraudPolicy.fraudDetails;
+
+                        let reason: string | null = null;
+
+                        if (raw) {
+                          // Prefer explicit error message
+                          if (raw.error && (raw.error.error_message || raw.error.error)) {
+                            reason = raw.error.error_message || String(raw.error.error);
+                          }
+
+                          // FraudLabsPro specific fields
+                          if (!reason && raw.fraudlabspro_status) {
+                            reason = String(raw.fraudlabspro_status);
+                            if (Array.isArray(raw.fraudlabspro_rules) && raw.fraudlabspro_rules.length) {
+                              const rules = raw.fraudlabspro_rules.map((r: any) => typeof r === 'string' ? r : (r.rule || JSON.stringify(r))).join(', ');
+                              reason += ' — ' + rules;
+                            }
+                          }
+
+                          // Generic fallbacks
+                          if (!reason && raw.status) reason = String(raw.status);
+                          if (!reason && raw.action) reason = String(raw.action);
+                          if (!reason && raw.result) reason = String(raw.result);
+                          if (!reason && raw.fraudlabspro_score) reason = 'Score: ' + String(raw.fraudlabspro_score);
+                        }
+
+                        if (reason) {
+                          return (
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">Fraud Reason</p>
+                              <p className="text-sm text-gray-700 p-3 bg-gray-50 rounded-lg border border-gray-200">{reason}</p>
+                            </div>
+                          );
+                        }
+                      } catch (e) {
+                        // ignore parse errors and fall back to raw display below
+                      }
+
+                      return null;
+                    })()}
+
                     <p className="text-sm font-medium text-gray-700">Fraud Detection Analysis</p>
                     <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
                       <pre className="text-xs text-gray-700 whitespace-pre-wrap">
@@ -2096,7 +2141,7 @@ export function PoliciesSection() {
 
         {/* Create New Policy Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl bg-white">
             <DialogHeader>
               <DialogTitle>Create New Policy</DialogTitle>
               <DialogDescription>Add a new document policy for a customer</DialogDescription>
@@ -2600,7 +2645,7 @@ export function PoliciesSection() {
 
         {/* Customer Details Dialog */}
         <Dialog open={isCustomerDialogOpen} onOpenChange={setIsCustomerDialogOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl bg-white">
             <DialogHeader>
               <DialogTitle>Customer Details</DialogTitle>
               <DialogDescription>

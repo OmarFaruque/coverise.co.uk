@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     // 1. Fetch quote record from the database using policyNumber
     const quoteRecord = await db.select().from(quotes).where(eq(quotes.policyNumber, policyNumber)).limit(1);
     if (!quoteRecord.length) {
-      return NextResponse.json({ error: 'Policy not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
     const quote = quoteRecord[0];
 

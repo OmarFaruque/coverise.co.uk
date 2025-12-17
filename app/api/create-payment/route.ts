@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { getSettings } from "@/lib/database";
 
 export async function POST(req: NextRequest) {
-  const { quoteData, docData, user, tip, discount } = await req.json();
+  const { quoteData, docData, user, tip, discount, flp_checksum } = await req.json();
   // Log incoming body for debugging
   
   if (!user) {
@@ -79,16 +79,49 @@ export async function POST(req: NextRequest) {
             if (quoteData?.customerData?.firstName) params.set("first_name", quoteData.customerData.firstName as string);
             if (quoteData?.customerData?.lastName) params.set("last_name", quoteData.customerData.lastName as string);
             if (amount) params.set("amount", String(amount));
+            if (flp_checksum) params.set('flp_checksum', flp_checksum);
 
             // Optional additional fields
             if (quoteData?.id) params.set('order_id', String(quoteData.id));
             const currency = (quoteData as any)?.currency || 'GBP';
             if (currency) params.set('currency', currency);
-            if (quoteData?.customerData?.address) params.set('billing_address', quoteData.customerData.address as string);
+
+            const billingAddress = quoteData?.customerData?.address;
             const postcode = quoteData?.customerData?.post_code ?? quoteData?.customerData?.postcode ?? (quoteData?.customerData as any)?.postCode;
-            if (postcode) params.set('billing_postcode', postcode as string);
             const phone = quoteData?.customerData?.phoneNumber ?? (quoteData?.customerData as any)?.phone;
-            if (phone) params.set('billing_phone', phone as string);
+
+            // Set customer, billing and shipping details
+            if (user.id) params.set('customer_id', user.id);
+            if (quoteData.customerData?.firstName && quoteData.customerData?.lastName) {
+                params.set('billing_name', `${quoteData.customerData.firstName} ${quoteData.customerData.lastName}`);
+                params.set('shipping_name', `${quoteData.customerData.firstName} ${quoteData.customerData.lastName}`); // Assuming shipping is same as billing
+            }
+            if (user.email) params.set('billing_email', user.email);
+            if (billingAddress) {
+                params.set('billing_address', billingAddress as string);
+                params.set('shipping_address', billingAddress as string); // Assuming shipping is same as billing
+            }
+            if (postcode) {
+                params.set('billing_postcode', postcode as string);
+                params.set('shipping_postcode', postcode as string); // Assuming shipping is same as billing
+            }
+            if (phone) {
+                params.set('billing_phone', phone as string);
+                params.set('shipping_phone', phone as string); // Assuming shipping is same as billing
+            }
+
+            // Product details
+            if (quoteData.id) params.set('product_id', String(quoteData.id));
+            // siteName is already fetched above
+            params.set('product_name', `${siteName} Docs: Docs ${quoteData.id}`);
+            params.set('product_quantity', '1');
+            if (amount) params.set('product_price', String(amount));
+            if (quoteData.promoCode) params.set('promo_code', quoteData.promoCode);
+
+            // transaction_id will be set after Mollie payment creation, temporarily use order_id
+            if (quoteData.id) params.set('transaction_id', String(quoteData.id));
+
+            // User agent / device info
             const ua = req.headers.get('user-agent');
             if (ua) params.set('user_agent', ua);
 

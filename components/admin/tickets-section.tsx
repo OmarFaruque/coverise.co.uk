@@ -572,7 +572,7 @@ export function TicketsSection() {
 
         {/* Ticket Dialog */}
         <Dialog open={isTicketDialogOpen} onOpenChange={setIsTicketDialogOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col bg-white">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -728,7 +728,7 @@ export function TicketsSection() {
 
         {/* Email Dialog */}
         <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl bg-white">
             <DialogHeader>
               <DialogTitle>Email User</DialogTitle>
               <DialogDescription>Send an email to users with attachments</DialogDescription>

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     if (!policyId) return NextResponse.json({ success: false, message: "policyId is required" }, { status: 400 });
 
     const quoteRow = await db.query.quotes.findFirst({ where: eq(quotes.id, policyId) });
-    if (!quoteRow) return NextResponse.json({ success: false, message: "Policy not found" }, { status: 404 });
+    if (!quoteRow) return NextResponse.json({ success: false, message: "Document not found" }, { status: 404 });
 
     const fraudSettings = await getSettings("fraudLabsPro");
     const apiKey = fraudSettings?.apiKey;

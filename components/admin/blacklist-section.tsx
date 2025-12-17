@@ -379,7 +379,7 @@ export function BlacklistSection({ blacklistData }: { blacklistData: any }) {
         </Tabs>
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg bg-white">
             <DialogHeader>
               <DialogTitle>Add to Blacklist</DialogTitle>
               <DialogDescription>Add a new entry to the blacklist to prevent access or transactions</DialogDescription>
@@ -413,7 +413,7 @@ export function BlacklistSection({ blacklistData }: { blacklistData: any }) {
         </Dialog>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg bg-white">
             <DialogHeader>
               <DialogTitle>Edit Blacklist Item</DialogTitle>
               <DialogDescription>Modify the details of the selected blacklist entry.</DialogDescription>
@@ -438,7 +438,7 @@ export function BlacklistSection({ blacklistData }: { blacklistData: any }) {
         </Dialog>
 
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-red-500" />Remove from Blacklist</DialogTitle>
               <DialogDescription>Are you sure you want to remove this entry? This action cannot be undone.</DialogDescription>

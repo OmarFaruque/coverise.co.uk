@@ -4,6 +4,7 @@ import React from 'react';
 import DOMPurify from 'dompurify';
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Cookies from 'js-cookie';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
@@ -73,12 +74,14 @@ const StripePayment = React.forwardRef(({ quoteData, user, quote, onProcessingCh
       }
       onProcessingChange(true);
       try {
+        const flp_checksum = Cookies.get('flp_checksum');
         const response = await fetch("/api/quote-checkout/create-stripe-payment", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             quoteData: { ...quoteData, id: quote.id, total: quoteData?.total },
             user: user,
+            flp_checksum,
           }),
         });
         const respJson = await response.json();
@@ -183,12 +186,14 @@ const StripeApplePayButton = ({ quoteData, user, quote, onProcessingChange, allT
                 };
 
                 try {
+                    const flp_checksum = Cookies.get('flp_checksum');
                     const response = await fetch("/api/quote-checkout/create-stripe-payment", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({
                         quoteData: { ...quoteData, id: quote.id, total: quoteData?.total },
                         user: user,
+                        flp_checksum,
                       }),
                     });
                     const respJson = await response.json();
@@ -268,12 +273,14 @@ const PaddleCheckoutButton = ({ quoteData, user, discountedTotal, disabled }) =>
     }
     setIsProcessing(true);
     try {
+      const flp_checksum = Cookies.get('flp_checksum');
       const response = await fetch("/api/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           quoteData: { ...quoteData, total: discountedTotal },
           user: user,
+          flp_checksum,
         }),
       });
       const data = await response.json();
@@ -357,6 +364,16 @@ function QuoteCheckoutPage() {
   }
 
 
+  useEffect(() => {
+    const fraudLabsScript = document.createElement('script');
+    fraudLabsScript.src = "https://cdn.fraudlabspro.com/s.js";
+    fraudLabsScript.async = true;
+    document.body.appendChild(fraudLabsScript);
+
+    return () => {
+      document.body.removeChild(fraudLabsScript);
+    };
+  }, []);
 
   useEffect(() => {
     if (authLoading) {
@@ -397,12 +414,14 @@ function QuoteCheckoutPage() {
         try {
           const Airwallex = (await import('airwallex-payment-elements')).default;
           await Airwallex.loadAirwallex({ env: 'demo' });
+          const flp_checksum = Cookies.get('flp_checksum');
           const response = await fetch('/api/quote-checkout/create-airwallex-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               quoteData: { ...quoteData, total: quoteData?.total },
               user: user,
+              flp_checksum,
             }),
           });
           const { clientSecret, intentId } = await response.json();
@@ -432,6 +451,7 @@ function QuoteCheckoutPage() {
       return;
     }
     setIsProcessingPayment(true);
+    const flp_checksum = Cookies.get('flp_checksum');
 
     switch (selectedPaymentMethod) {
       case 'mollie':
@@ -442,6 +462,7 @@ function QuoteCheckoutPage() {
                 body: JSON.stringify({
                     quoteData: { ...quoteData, id: quote.id, policyNumber: quote.policyNumber, total: quoteData?.total },
                     user: user,
+                    flp_checksum,
                 }),
             });
             const data = await response.json();
@@ -524,6 +545,7 @@ function QuoteCheckoutPage() {
     if (!token) return;
     setIsProcessingPayment(true);
     try {
+      const flp_checksum = Cookies.get('flp_checksum');
       const response = await fetch('/api/quote-checkout/create-square-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -531,6 +553,7 @@ function QuoteCheckoutPage() {
           sourceId: token.token,
           quoteData: { ...quoteData, id: quote.id, total: quoteData?.total },
           user: user,
+          flp_checksum,
         }),
       });
       if (response.ok) {

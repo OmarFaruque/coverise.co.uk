@@ -254,7 +254,7 @@ export function UsersSection() {
 
         {/* User Details Dialog */}
         <Dialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-4xl bg-white">
             <DialogHeader>
               <DialogTitle>User Details</DialogTitle>
               <DialogDescription>
@@ -330,7 +330,7 @@ export function UsersSection() {
 
         {/* Blacklist Confirmation Dialog */}
         <Dialog open={isBlacklistDialogOpen} onOpenChange={setIsBlacklistDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
@@ -368,7 +368,7 @@ export function UsersSection() {
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Trash2 className="h-5 w-5 text-red-500" />

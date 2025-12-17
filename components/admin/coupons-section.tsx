@@ -286,7 +286,7 @@ export function CouponsSection() {
 
             {/* Create Coupon Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white">
                 <DialogHeader>
                   <DialogTitle className="flex items-center justify-between">Create Coupon</DialogTitle>
                 </DialogHeader>
@@ -706,7 +706,7 @@ export function CouponsSection() {
 
             {/* Delete Coupon Dialog */}
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md bg-white">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5 text-red-500" />

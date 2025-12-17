@@ -35,6 +35,7 @@ import { calculateQuote as calculateQuoteCommon } from "@/lib/quote";
 
 import { occupation_list } from "@/lib/occupation";
 
+
 const modificationsData = {
   "Audio & Electronics": [
     "Additional screens / headrest displays",
@@ -1119,7 +1120,7 @@ export default function GetQuotePage() {
   
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div className={` get-quote-dark min-h-screen flex flex-col relative overflow-hidden`}>
       <ExpirationDialog />
       {/* Animated gradient background */}
       <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-black to-gray-900 -z-10" />
@@ -1840,11 +1841,11 @@ export default function GetQuotePage() {
                     <select
                       value={formData.startDate}
                       onChange={(e) => handleInputChange("startDate", e.target.value)}
-                      className="w-full h-12 px-3 bg-black/50 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-base text-white shadow-sm"
+                      className="w-full h-12 px-3 bg-black/50 border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-base text-white shadow-sm [&>option]:bg-black [&>option]:text-white [&>option:checked]:bg-gray-700"
                       required
                     >
                       {generateDateOptions().map((option) => (
-                        <option key={option} value={option}>
+                        <option key={option} value={option} style={{ backgroundColor: '#000', color: '#fff' }}>
                           {option}
                         </option>
                       ))}

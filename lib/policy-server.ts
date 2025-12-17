@@ -21,11 +21,11 @@ export async function validatePolicyAccess(
 
 
   if (!policy) {
-    return { isValid: false, error: "Policy not found" };
+    return { isValid: false, error: "Document not found" };
   }
 
   if (!policy) {
-    return { isValid: false, error: "Policy not found" }
+    return { isValid: false, error: "Document not found" }
   }
 
   // Validate surname (case insensitive)

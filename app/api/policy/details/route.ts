@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       return NextResponse.json(policy);
     } else {
       return NextResponse.json(
-        { error: "Policy not found" },
+        { error: "Document not found" },
         { status: 404 }
       );
     }

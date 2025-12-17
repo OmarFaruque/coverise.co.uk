@@ -1072,9 +1072,11 @@ export function SettingsSection() {
     setLogoUploadError(null);
 
     try {
+      const form = new FormData();
+      form.append('file', file, file.name);
       const response = await fetch(`/api/admin/upload-logo?filename=${file.name}`, {
         method: "POST",
-        body: file,
+        body: form,
       });
 
       if (!response.ok) {
@@ -1102,9 +1104,11 @@ export function SettingsSection() {
     setFaviconUploadError(null);
 
     try {
+      const form = new FormData();
+      form.append('file', file, file.name);
       const response = await fetch(`/api/admin/upload-logo?filename=${file.name}`, {
         method: "POST",
-        body: file,
+        body: form,
       });
 
       if (!response.ok) {

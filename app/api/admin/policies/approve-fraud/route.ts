@@ -10,14 +10,14 @@ export async function POST(request: NextRequest) {
     const { policyId, note } = await request.json();
 
     if (!policyId) {
-      return NextResponse.json({ success: false, error: 'Policy ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Document ID is required' }, { status: 400 });
     }
 
     // Retrieve the policy to verify it exists
     const policy = await db.select().from(quotes).where(eq(quotes.id, policyId)).limit(1);
 
     if (policy.length === 0) {
-      return NextResponse.json({ success: false, error: 'Policy not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Document not found' }, { status: 404 });
     }
 
     // Update fraud status to 'ok' (approved) and set the fraud note

@@ -230,7 +230,7 @@ export function AdminsSection() {
 
         {/* Add Admin Dialog */}
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle>Add New Admin</DialogTitle>
               <DialogDescription>Create a new administrator account with enhanced security</DialogDescription>
@@ -319,7 +319,7 @@ export function AdminsSection() {
 
         {/* Delete Admin Dialog */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-500" />

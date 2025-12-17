@@ -278,7 +278,7 @@ export async function GET(req: NextRequest) {
     const settings = await getAllSettings();
 
     if (!policy) {
-      return new NextResponse("Policy not found", { status: 404 });
+      return new NextResponse("Document not found", { status: 404 });
     }
 
     const html = renderCertificateToHtml(policy, settings);
